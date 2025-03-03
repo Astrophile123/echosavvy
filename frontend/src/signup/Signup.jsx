@@ -8,6 +8,7 @@ const Signup = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [currentField, setCurrentField] = useState(null);
   const recognitionRef = useRef(null);
+  const synthRef = useRef(window.speechSynthesis);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,23 +25,20 @@ const Signup = () => {
         speakText(`You entered: ${transcript}`);
       };
 
-      recognition.onerror = () => {
-        speakText('Error with voice input. Please try again.');
-      };
-
+      recognition.onerror = () => speakText('Error with voice input. Please try again.');
       recognitionRef.current = recognition;
     }
   }, [currentField]);
 
   const speakText = (text) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 1.2;
-      utterance.pitch = 1;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-    }
+    if (!synthRef.current) return;
+    synthRef.current.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-IN';
+    utterance.rate = 1;
+    utterance.pitch = 1.2;
+    utterance.voice = synthRef.current.getVoices().find(voice => voice.name.includes("Google UK English Female")) || synthRef.current.getVoices()[0];
+    synthRef.current.speak(utterance);
   };
 
   const handleFieldFocus = (field, message) => {
@@ -50,6 +48,10 @@ const Signup = () => {
       setTimeout(() => recognitionRef.current.start(), 200);
     }
     speakText(message);
+  };
+
+  const handleHover = (text) => {
+    speakText(text);
   };
 
   const base64urlEncode = (buffer) =>
@@ -117,15 +119,16 @@ const Signup = () => {
 
   return (
     <div className={styles.mainContainer}>
-      <h1 className={styles.pageHeading}>Echosavvy</h1>
+      <h1 className={styles.pageHeading} onMouseEnter={() => handleHover('Echosavvy Signup Page')}>Echosavvy</h1>
       <div className={styles.formContainer}>
-        <h2>Signup</h2>
+        <h2 onMouseEnter={() => handleHover('Signup Form')}>Signup</h2>
         <input
           type="text"
           placeholder="Enter Your Username"
           value={userData.username}
           onFocus={() => handleFieldFocus('username', 'Enter your username and speak now.')}
           onChange={(e) => setUserData({ ...userData, username: e.target.value })}
+          onMouseEnter={() => handleHover('Enter your username')}
           className={styles.userInput}
         />
         <input
@@ -134,12 +137,13 @@ const Signup = () => {
           value={userData.phone}
           onFocus={() => handleFieldFocus('phone', 'Enter your phone number and speak now.')}
           onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+          onMouseEnter={() => handleHover('Enter your phone number')}
           className={styles.userInput}
         />
-        {errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
-        <button className={styles.submitButton} onClick={registerUser}>Signup with Fingerprint</button>
+        {errorMessage && <p className={styles.errorMessage} onMouseEnter={() => handleHover(errorMessage)}>{errorMessage}</p>}
+        <button className={styles.submitButton} onClick={registerUser} onMouseEnter={() => handleHover('Signup with Fingerprint')}>Signup with Fingerprint</button>
         <Link to="/login">
-          <p className={styles.link}>Already Have An Account? Login now!</p>
+          <p className={styles.link} onMouseEnter={() => handleHover('Already have an account? Login now!')}>Already Have An Account? Login now!</p>
         </Link>
       </div>
     </div>

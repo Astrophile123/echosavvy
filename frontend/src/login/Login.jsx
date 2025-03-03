@@ -28,10 +28,10 @@ const Login = () => {
     if (!synthRef.current) return;
     synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
+    utterance.lang = 'en-IN';
     utterance.rate = 1;
     utterance.pitch = 1.2;
-    utterance.voice = synthRef.current.getVoices()[0];
+    utterance.voice = synthRef.current.getVoices().find(voice => voice.name.includes("Google UK English Female")) || synthRef.current.getVoices()[0];
     synthRef.current.speak(utterance);
   }, []);
 
@@ -67,26 +67,22 @@ const Login = () => {
     speakText(`Please say your ${field}`);
   }, [speakText]);
 
+  const handleMouseHover = (message) => {
+    speakText(message);
+  };
+
   const authenticateWithFingerprint = async () => {
     try {
       setLoading(true);
       setErrorMessage('');
-      console.log("🔹 Fetching challenge from backend...");
+      speakText("Fetching authentication challenge. Please wait.");
       const challengeResponse = await axios.post('http://localhost:8082/api/get-challenge', { username: userData.username });
-      console.log("🔹 Challenge Response:", challengeResponse.data);
-
-      if (!challengeResponse.data.success) {
-        throw new Error(challengeResponse.data.message || "Failed to get challenge.");
-      }
-
+      if (!challengeResponse.data.success) throw new Error(challengeResponse.data.message || "Failed to get challenge.");
+      
       const { challenge, credential_id } = challengeResponse.data;
-      if (!challenge || !credential_id) {
-        throw new Error("Invalid challenge response from server.");
-      }
+      if (!challenge || !credential_id) throw new Error("Invalid challenge response from server.");
 
-      console.log("🔹 Received challenge & credential ID:", { challenge, credential_id });
       speakText("Place your finger on the scanner to log in.");
-
       const credential = await navigator.credentials.get({
         publicKey: {
           challenge: base64urlToUint8Array(challenge),
@@ -95,10 +91,9 @@ const Login = () => {
           timeout: 60000,
         },
       });
-
+      
       if (!credential) throw new Error("Fingerprint authentication failed.");
-      console.log("🔹 WebAuthn credential obtained:", credential);
-
+      
       const response = await axios.post('http://localhost:8082/api/login', {
         username: userData.username,
         credential_id: uint8ArrayToBase64(credential.rawId),
@@ -108,7 +103,6 @@ const Login = () => {
       });
 
       if (response.data.success) {
-        console.log("✅ Login successful:", response.data.user);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         speakText("Login successful. Redirecting to the products page.");
         navigate('/products');
@@ -116,7 +110,6 @@ const Login = () => {
         throw new Error(response.data.message || "Login failed. Please try again.");
       }
     } catch (error) {
-      console.error("❌ Authentication Error:", error);
       setErrorMessage(error.message);
       speakText(error.message);
     } finally {
@@ -126,9 +119,9 @@ const Login = () => {
 
   return (
     <div className={styles.mainContainer}>
-      <h1 className={styles.pageHeading}>Echosavvy</h1>
+      <h1 className={styles.pageHeading} onMouseEnter={() => handleMouseHover("Welcome to EchoSavvy login page")}>Echosavvy</h1>
       <div className={styles.formContainer}>
-        <h2>Login</h2>
+        <h2 onMouseEnter={() => handleMouseHover("Login page")}>Login</h2>
         <input
           type="text"
           required
@@ -136,15 +129,16 @@ const Login = () => {
           value={userData.username}
           onFocus={() => handleFieldFocus('username')}
           onChange={(e) => setUserData({ ...userData, username: e.target.value })}
+          onMouseEnter={() => handleMouseHover("Enter your username")}
           className={styles.userPhoneInput}
           disabled={loading}
         />
-        {errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
-        <button className={styles.submitButton} onClick={authenticateWithFingerprint} disabled={loading}>
+        {errorMessage && <p className={styles.errorMessage} onMouseEnter={() => handleMouseHover(errorMessage)}>{errorMessage}</p>}
+        <button className={styles.submitButton} onClick={authenticateWithFingerprint} onMouseEnter={() => handleMouseHover("Click to login with fingerprint")} disabled={loading}>
           {loading ? 'Authenticating...' : 'Login with Fingerprint'}
         </button>
-        <Link to="/signup">
-          <p className={styles.link}>Don&apos;t Have An Account? Signup now!</p>
+        <Link to="/signup" onMouseEnter={() => handleMouseHover("Go to Signup Page")}> 
+          <p className={styles.link}>Don't Have An Account? Signup now!</p>
         </Link>
       </div>
     </div>
@@ -152,4 +146,5 @@ const Login = () => {
 };
 
 export default Login;
+
 

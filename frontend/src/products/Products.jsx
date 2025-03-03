@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TiShoppingCart } from "react-icons/ti";
-import { IoHome } from "react-icons/io5";
 import { HiMicrophone } from "react-icons/hi2";
 import styles from "./Products.module.css";
-import axios from "axios";
 import { useCart } from "../cart/CartContext";
 
 const products = [
@@ -32,12 +30,23 @@ const products = [
 const Products = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState(products);
-  const [isListening, setIsListening] = useState(false);
-  const [user_id, setUserId] = useState(localStorage.getItem("user_id"));
   const synthRef = useRef(window.speechSynthesis);
   const recognitionRef = useRef(null);
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const user_id = localStorage.getItem("user_id");
+
+  // ✅ Wrap handleSpeechResult inside useCallback
+  const handleSpeechResult = useCallback((event) => {
+    const transcript = event.results[0][0].transcript;
+    setSearchTerm(transcript);
+    handleSearch({ target: { value: transcript } });
+  }, []);
+
+  // ✅ Wrap handleSpeechError inside useCallback
+  const handleSpeechError = useCallback(() => {
+    speakText("Sorry, I couldn't understand you. Please try again.");
+  }, []);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -52,31 +61,19 @@ const Products = () => {
       console.warn("Speech recognition not supported.");
     }
 
-    synthRef.current.onvoiceschanged = () => synthRef.current.getVoices();
+    const synth = synthRef.current;
+    synth.onvoiceschanged = () => synth.getVoices();
 
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
-      if (synthRef.current) synthRef.current.cancel();
+      if (synth) synth.cancel();
     };
-  }, []);
-
-  const handleSpeechResult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    setSearchTerm(transcript);
-    handleSearch({ target: { value: transcript } });
-    setIsListening(false);
-  };
-
-  const handleSpeechError = () => {
-    setIsListening(false);
-    speakText("Sorry, I couldn't understand you. Please try again.");
-  };
+  }, [handleSpeechResult, handleSpeechError]); // ✅ Dependencies added safely
 
   const startVoiceSearch = () => {
     if (recognitionRef.current) {
       synthRef.current.cancel();
       recognitionRef.current.start();
-      setIsListening(true);
       speakText("Listening...");
     }
   };
@@ -105,13 +102,11 @@ const Products = () => {
 
   const handleAddToCart = async (product) => {
     const token = localStorage.getItem("token");
-    const user_id = localStorage.getItem("user_id");
-  
+
     if (!token || !user_id) {
- 
       const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
       const existingItem = guestCart.find((item) => item.product_id === product.id);
-  
+
       if (existingItem) {
         existingItem.quantity += 1;
       } else {
@@ -123,12 +118,10 @@ const Products = () => {
           image_url: product.image,
         });
       }
-  
+
       localStorage.setItem("guestCart", JSON.stringify(guestCart));
-      console.log("Guest cart updated:", guestCart); // Debugging
       speakText("Added to cart successfully!");
     } else {
- 
       try {
         await addToCart({
           user_id,
@@ -144,19 +137,23 @@ const Products = () => {
         speakText("Failed to add to cart. Please try again.");
       }
     }
-  
-    navigate("/cart"); 
+
+    navigate("/cart");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("token");
+    navigate("/userlogin");
   };
 
   return (
     <main className={styles.productDisplay}>
-     
       <div className={styles.topBar}>
         <h1 className={styles.platformName} onMouseEnter={() => speakText("Welcome to EchoSavvy products page")}>
           Echosavvy
         </h1>
 
-     
         <div className={styles.searchContainer}>
           <input
             type="text"
@@ -168,7 +165,6 @@ const Products = () => {
             onMouseEnter={() => speakText("Search bar for products search")}
             onMouseLeave={stopSpeech}
           />
-
           <HiMicrophone
             className={styles.microphoneIcon}
             size={20}
@@ -181,13 +177,12 @@ const Products = () => {
           />
         </div>
 
-       
         {user_id ? (
           <>
             <Link to={`/cart/${user_id}`} className={styles.cartButton}>
               <TiShoppingCart size={24} /> Cart
             </Link>
-            <button className={styles.logoutButton} onClick={() => handleLogout()}>
+            <button className={styles.logoutButton} onClick={handleLogout}>
               Logout
             </button>
           </>
@@ -198,7 +193,6 @@ const Products = () => {
         )}
       </div>
 
-    
       <div className={styles.productsDisp}>
         <div className={styles.productGrid} onMouseLeave={stopSpeech}>
           {filteredProducts.length > 0 ? (

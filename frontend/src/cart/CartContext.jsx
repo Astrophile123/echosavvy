@@ -1,15 +1,12 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import axios from "axios";
 
 const CartContext = createContext();
-
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const user_id = localStorage.getItem("user_id");
   const token = localStorage.getItem("token");
-
 
   const fetchCartItems = useCallback(async () => {
     if (token && user_id) {
@@ -22,7 +19,6 @@ export const CartProvider = ({ children }) => {
         console.error("Error fetching cart items:", error);
       }
     } else {
-   
       const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
       setCartItems(guestCart);
     }
@@ -32,7 +28,6 @@ export const CartProvider = ({ children }) => {
     fetchCartItems();
   }, [fetchCartItems]);
 
-
   const updateLocalStorageCart = (updatedCart) => {
     localStorage.setItem("guestCart", JSON.stringify(updatedCart));
     setCartItems(updatedCart);
@@ -41,7 +36,7 @@ export const CartProvider = ({ children }) => {
   const addToCart = async (item) => {
     if (token && user_id) {
       try {
-        const { data } = await axios.post('http://localhost:8082/cart/add', item, {
+        const { data } = await axios.post("http://localhost:8082/cart/add", item, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCartItems((prev) => [...prev, data]);
@@ -49,24 +44,23 @@ export const CartProvider = ({ children }) => {
         console.error("Error adding to cart:", error);
       }
     } else {
-      
       const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
-      const existingItem = guestCart.find((i) => i.product_id === item.product_id);
+      const existingItemIndex = guestCart.findIndex((i) => i.product_id === item.product_id);
 
-      if (existingItem) {
-        existingItem.quantity += item.quantity;
+      if (existingItemIndex !== -1) {
+        guestCart[existingItemIndex].quantity += item.quantity;
       } else {
         guestCart.push(item);
       }
+
       updateLocalStorageCart(guestCart);
     }
   };
 
-
   const removeItem = async (product_id) => {
     if (token && user_id) {
       try {
-        await axios.delete('http://localhost:8082/cart/remove', {
+        await axios.delete("http://localhost:8082/cart/remove", {
           data: { user_id, product_id },
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -80,12 +74,11 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-
   const updateQuantity = async (product_id, change) => {
     if (token && user_id) {
       try {
         await axios.put(
-          'http://localhost:8082/cart/update',
+          "http://localhost:8082/cart/update",
           {
             user_id,
             product_id,
@@ -95,7 +88,7 @@ export const CartProvider = ({ children }) => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        fetchCartItems(); 
+        fetchCartItems(); // Refresh cart items after update
       } catch (error) {
         console.error("Error updating quantity:", error);
       }
@@ -104,12 +97,10 @@ export const CartProvider = ({ children }) => {
       const item = guestCart.find((item) => item.product_id === product_id);
 
       if (item) {
-        item.quantity += change; 
-        if (item.quantity <= 0) {
-          
+        item.quantity += change;
+        if (item.quantity < 1) {
           updateLocalStorageCart(guestCart.filter((i) => i.product_id !== product_id));
         } else {
-         
           updateLocalStorageCart(guestCart);
         }
       }
@@ -123,14 +114,12 @@ export const CartProvider = ({ children }) => {
         fetchCartItems,
         addToCart,
         removeItem,
-        increaseAmount: (product_id) => updateQuantity(product_id, 1),
-        decreaseAmount: (product_id) => updateQuantity(product_id, -1),
+        updateQuantity,
       }}
     >
       {children}
     </CartContext.Provider>
   );
 };
-
 
 export const useCart = () => useContext(CartContext);
