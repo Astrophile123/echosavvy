@@ -1,4 +1,4 @@
-import PropTypes from "prop-types"; // ✅ Import PropTypes for validation
+import React from "react";
 import { FaTrash } from "react-icons/fa";
 import { useCart } from "./CartContext";
 
@@ -20,14 +20,14 @@ const CartItems = ({ item, onMouseEnter, onMouseLeave }) => {
       <p aria-label={`Price: ${price}`}>${price}</p>
       <div className="cart-amount-toggle">
         <button
-          onClick={() => decreaseAmount(product_id)}
+          onClick={() => decreaseAmount(product_id)} 
           aria-label={`Decrease quantity of ${product_name}. Current quantity: ${quantity}`}
         >
           -
         </button>
         <span aria-label={`Quantity: ${quantity}`}>{quantity}</span>
         <button
-          onClick={() => increaseAmount(product_id)}
+          onClick={() => increaseAmount(product_id)} 
           aria-label={`Increase quantity of ${product_name}. Current quantity: ${quantity}`}
         >
           +
@@ -41,19 +41,6 @@ const CartItems = ({ item, onMouseEnter, onMouseLeave }) => {
       />
     </div>
   );
-};
-
-// ✅ Add PropTypes validation to prevent missing props errors
-CartItems.propTypes = {
-  item: PropTypes.shape({
-    product_id: PropTypes.number.isRequired,
-    product_name: PropTypes.string.isRequired,
-    price: PropTypes.number.isRequired,
-    quantity: PropTypes.number.isRequired,
-    image_url: PropTypes.string.isRequired,
-  }).isRequired,
-  onMouseEnter: PropTypes.func.isRequired,
-  onMouseLeave: PropTypes.func.isRequired,
 };
 
 export default CartItems;

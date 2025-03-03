@@ -6,7 +6,7 @@ const db = require('../db');
 router.post("/add", (req, res) => {
     const { user_id, product_id, product_name, price, image_url } = req.body;
 
-    console.log("Request Body:", req.body); // Log the request body
+    console.log("Request Body:", req.body); 
 
     if (!user_id || !product_id || !product_name || !price || !image_url) {
         return res.status(400).json({ error: "All fields are required" });
@@ -18,14 +18,14 @@ router.post("/add", (req, res) => {
         ON DUPLICATE KEY UPDATE quantity = quantity + 1, total_amount = total_amount + ?;
     `;
 
-    const total_amount = price * 1; // Initial quantity is 1
+    const total_amount = price * 1; 
 
     db.query(
         query,
         [user_id, product_id, product_name, price, image_url, total_amount, total_amount],
         (err, result) => {
             if (err) {
-                console.error("Database Error:", err); // Log the database error
+                console.error("Database Error:", err); 
                 return res.status(500).json({ error: err.message });
             }
             res.json({ message: "Product added to cart successfully" });
@@ -33,7 +33,7 @@ router.post("/add", (req, res) => {
     );
 });
 
-// Get Cart Items for a Specific User
+
 router.get('/:user_id', async (req, res) => {
     try {
         const { user_id } = req.params;
@@ -53,7 +53,7 @@ router.get('/:user_id', async (req, res) => {
     }
 });
 
-// Remove a Product from Cart
+
 router.delete("/remove/:id", (req, res) => {
     const { id } = req.params;
     db.query("DELETE FROM cart WHERE id = ?", [id], (err, result) => {
@@ -62,7 +62,7 @@ router.delete("/remove/:id", (req, res) => {
     });
 });
 
-// Clear Entire Cart for a Specific User
+
 router.delete("/clear/:user_id", (req, res) => {
     const { user_id } = req.params;
     db.query("DELETE FROM cart WHERE user_id = ?", [user_id], (err, result) => {

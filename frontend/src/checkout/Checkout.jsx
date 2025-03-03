@@ -1,79 +1,23 @@
-import { useState } from 'react';
+import React, { useEffect } from 'react';
 import styles from './Checkout.module.css';
 
 const Checkout = () => {
-  const [paymentMethod, setPaymentMethod] = useState('creditCard');
-  const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('');
+  // Optional: Text-to-speech announcement
+  useEffect(() => {
+    const message = 'Redirecting to payment page. Please do not refresh the page or go back.';
+    const speech = new SpeechSynthesisUtterance(message);
+    window.speechSynthesis.speak(speech); // Announce the message
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    alert('Order placed successfully!');
-  };
+    // Cleanup speech synthesis on component unmount
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
 
   return (
     <div className={styles.checkoutContainer}>
-      <h1 className={styles.checkoutHeader}>Checkout</h1>
-      <form onSubmit={handleSubmit} className={styles.checkoutForm}>
-        <div className={styles.paymentSection}>
-          <h2>Payment Method</h2>
-          <label>
-            <input
-              type="radio"
-              name="paymentMethod"
-              value="creditCard"
-              checked={paymentMethod === 'creditCard'}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-            />
-            Credit Card
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="paymentMethod"
-              value="paypal"
-              checked={paymentMethod === 'paypal'}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-            />
-            PayPal
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="paymentMethod"
-              value="cashOnDelivery"
-              checked={paymentMethod === 'cashOnDelivery'}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-            />
-            Cash on Delivery
-          </label>
-        </div>
-
-        <div className={styles.addressSection}>
-          <h2>Shipping Address</h2>
-          <textarea
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Enter your address"
-            required
-          />
-        </div>
-
-        <div className={styles.phoneSection}>
-          <h2>Phone Number</h2>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Enter your phone number"
-            required
-          />
-        </div>
-
-        <button type="submit" className={styles.submitButton}>
-          Place Order
-        </button>
-      </form>
+      <h1 className={styles.redirectMessage}>Redirecting to Payment Page...</h1>
+      <p className={styles.warningMessage}>Please do not refresh the page or go back.</p>
     </div>
   );
 };

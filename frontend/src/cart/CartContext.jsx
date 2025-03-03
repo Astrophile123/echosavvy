@@ -1,13 +1,15 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import PropTypes from 'prop-types'; // ✅ Import PropTypes
 import axios from 'axios';
 
+
 const CartContext = createContext();
+
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const user_id = localStorage.getItem("user_id");
   const token = localStorage.getItem("token");
+
 
   const fetchCartItems = useCallback(async () => {
     if (token && user_id) {
@@ -20,6 +22,7 @@ export const CartProvider = ({ children }) => {
         console.error("Error fetching cart items:", error);
       }
     } else {
+   
       const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
       setCartItems(guestCart);
     }
@@ -28,6 +31,7 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     fetchCartItems();
   }, [fetchCartItems]);
+
 
   const updateLocalStorageCart = (updatedCart) => {
     localStorage.setItem("guestCart", JSON.stringify(updatedCart));
@@ -45,6 +49,7 @@ export const CartProvider = ({ children }) => {
         console.error("Error adding to cart:", error);
       }
     } else {
+      
       const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
       const existingItem = guestCart.find((i) => i.product_id === item.product_id);
 
@@ -56,6 +61,7 @@ export const CartProvider = ({ children }) => {
       updateLocalStorageCart(guestCart);
     }
   };
+
 
   const removeItem = async (product_id) => {
     if (token && user_id) {
@@ -74,6 +80,7 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+
   const updateQuantity = async (product_id, change) => {
     if (token && user_id) {
       try {
@@ -88,7 +95,7 @@ export const CartProvider = ({ children }) => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        fetchCartItems();
+        fetchCartItems(); 
       } catch (error) {
         console.error("Error updating quantity:", error);
       }
@@ -97,10 +104,12 @@ export const CartProvider = ({ children }) => {
       const item = guestCart.find((item) => item.product_id === product_id);
 
       if (item) {
-        item.quantity += change;
+        item.quantity += change; 
         if (item.quantity <= 0) {
+          
           updateLocalStorageCart(guestCart.filter((i) => i.product_id !== product_id));
         } else {
+         
           updateLocalStorageCart(guestCart);
         }
       }
@@ -123,10 +132,5 @@ export const CartProvider = ({ children }) => {
   );
 };
 
-// ✅ Add PropTypes validation
-CartProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
 
-// Custom hook for easier context access
 export const useCart = () => useContext(CartContext);

@@ -1,4 +1,4 @@
-// Fetch and display all products
+
 window.onload = function() {
     fetch('http://localhost/ecommerce/api.php')
         .then(response => response.json())
