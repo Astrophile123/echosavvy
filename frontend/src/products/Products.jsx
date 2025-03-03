@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Add useNavigate here
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom"; 
 import { TiShoppingCart } from "react-icons/ti";
 import { IoHome } from "react-icons/io5";
 import { HiMicrophone } from "react-icons/hi2";
 import styles from "./Products.module.css";
 import axios from "axios";
+
 
 const products = [
   { id: 1, name: "Smartphone", category: "Mobile Phones", price: "$699.99", description: "Latest model with high-resolution camera and fast processor.", image: "/image/phone.png" },
@@ -28,72 +29,84 @@ const products = [
   { id: 19, name: "VR Headset", category: "Gaming", price: "$299.99", description: "Immersive VR headset for gaming and entertainment.", image: "/image/vrhead.webp" },
 ];
 
+
 const Products = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState(products);
-  const [isListening, setIsListening] = useState(false);
   const [user_id, setUserId] = useState(localStorage.getItem("user_id"));
-  const synthRef = useRef(window.speechSynthesis);
+  const synthRef = useRef(null);
   const recognitionRef = useRef(null);
-  const navigate = useNavigate(); // Use the hook here
+  const navigate = useNavigate();
+  const voiceRef = useRef(null);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
-      recognitionRef.current.lang = "en-US";
+      recognitionRef.current.lang = "en-IN";
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.onresult = handleSpeechResult;
-      recognitionRef.current.onerror = handleSpeechError;
     } else {
       console.warn("Speech recognition not supported.");
     }
 
-    synthRef.current.onvoiceschanged = () => synthRef.current.getVoices();
+    const synth = window.speechSynthesis;
+    synthRef.current = synth;
 
-    return () => {
-      if (recognitionRef.current) recognitionRef.current.stop();
-      if (synthRef.current) synthRef.current.cancel();
+    const updateVoice = () => {
+      const voices = synth.getVoices();
+      voiceRef.current = voices.find(v => v.lang === "en-IN" && v.name.includes("Female")) || 
+                         voices.find(v => v.lang.includes("en") && v.name.includes("Female"));
+      console.log("Selected Voice:", voiceRef.current);
     };
+
+    synth.onvoiceschanged = updateVoice;
+    updateVoice();
+
+    return () => synth.cancel();
   }, []);
 
-  const handleSpeechResult = (event) => {
+  const handleSpeechResult = useCallback((event) => {
     const transcript = event.results[0][0].transcript;
     setSearchTerm(transcript);
     handleSearch({ target: { value: transcript } });
-    setIsListening(false);
-  };
+  }, []);
 
-  const handleSpeechError = () => {
-    setIsListening(false);
+  const handleSpeechError = useCallback(() => {
     speakText("Sorry, I couldn't understand you. Please try again.");
-  };
+  }, []);
+
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.onresult = handleSpeechResult;
+      recognitionRef.current.onerror = handleSpeechError;
+    }
+  }, [handleSpeechResult, handleSpeechError]);
 
   const startVoiceSearch = () => {
     if (recognitionRef.current) {
       synthRef.current.cancel();
       recognitionRef.current.start();
-      setIsListening(true);
       speakText("Listening...");
     }
   };
 
   const speakText = (text) => {
-    if (!synthRef.current) return;
+    if (!synthRef.current || !voiceRef.current) {
+      console.error("Speech synthesis not supported or voice not available.");
+      return;
+    }
+
     synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = voiceRef.current;
     utterance.lang = "en-IN";
     utterance.rate = 1;
     utterance.pitch = 1.2;
     synthRef.current.speak(utterance);
   };
 
-  const stopSpeech = () => {
-    if (synthRef.current) {
-      synthRef.current.cancel();
-    }
-  };
+  const stopSpeech = () => synthRef.current?.cancel();
 
   const handleSearch = (e) => {
     const value = e.target.value.toLowerCase();
@@ -103,57 +116,34 @@ const Products = () => {
 
   const addToCart = async (product) => {
     const token = localStorage.getItem("token");
-    const user_id = localStorage.getItem("user_id");
-
     if (!token || !user_id) {
       alert("Please log in first!");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:8082/cart/add", {
+      await axios.post("http://localhost:8082/cart/add", {
         user_id,
         product_id: product.id,
         product_name: product.name,
         price: parseFloat(product.price.replace("$", "")),
         quantity: 1,
         image_url: product.image,
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      }, { headers: { Authorization: `Bearer ${token}` } });
 
-      console.log("✅ Added to cart:", response.data);
       alert("Added to cart successfully!");
     } catch (error) {
-      console.error("❌ Error adding to cart:", error.response?.data || error.message);
-      alert("Failed to add to cart. Check the console for details.");
-    }
-  };
-
-  const handleLogin = async (username, password) => {
-    try {
-      const response = await axios.post("http://localhost:8082/login", { username, password });
-
-      if (response.data.success) {
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user_id", response.data.user_id);
-        setUserId(response.data.user_id); // Update the state to reflect the logged-in user
-        alert("Login successful!");
-      } else {
-        alert(response.data.message);
-      }
-    } catch (error) {
-      console.error("❌ Login error:", error.response?.data || error.message);
-      alert("Login failed. Check credentials and try again.");
+      console.error("Error adding to cart:", error.response?.data || error.message);
+      alert("Failed to add to cart.");
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user_id");
-    setUserId(null); // Update the state to reflect the logged-out user
+    setUserId(null);
     alert("Logged out successfully!");
-    navigate("/"); // Redirect to the home page
+    navigate("/");
   };
 
   return (
@@ -170,16 +160,14 @@ const Products = () => {
             className={styles.searchBar}
             value={searchTerm}
             onChange={handleSearch}
-            aria-label="Search products by name"
-            onMouseEnter={() => speakText("Search bar for products search")}
+            aria-label="Search products"
+            onMouseEnter={() => speakText("Search bar for products")}
             onMouseLeave={stopSpeech}
           />
-
           <HiMicrophone
             className={styles.microphoneIcon}
             size={20}
             onClick={startVoiceSearch}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") startVoiceSearch(); }}
             tabIndex={0}
             aria-label="Start voice search"
             onMouseEnter={() => speakText("Click here to search products")}
@@ -193,15 +181,30 @@ const Products = () => {
 
         {user_id ? (
           <>
-            <Link to={`/cart/${user_id}`} className={styles.cartButton}>
+            <Link
+              to={`/cart/${user_id}`}
+              className={styles.cartButton}
+              onMouseEnter={() => speakText("Navigate to your cart")}
+              onMouseLeave={stopSpeech}
+            >
               <TiShoppingCart size={24} /> Cart
             </Link>
-            <button className={styles.logoutButton} onClick={handleLogout}>
+            <button
+              className={styles.logoutButton}
+              onClick={handleLogout}
+              onMouseEnter={() => speakText("Logout")}
+              onMouseLeave={stopSpeech}
+            >
               Logout
             </button>
           </>
         ) : (
-          <button className={styles.cartButton} onClick={() => alert("Please log in first!")}>
+          <button
+            className={styles.cartButton}
+            onClick={() => alert("Please log in first!")}
+            onMouseEnter={() => speakText("Please log in to access your cart")}
+            onMouseLeave={stopSpeech}
+          >
             <TiShoppingCart size={24} /> Cart
           </button>
         )}
@@ -214,7 +217,7 @@ const Products = () => {
               <div
                 key={product.id}
                 className={styles.productCard}
-                onMouseEnter={() => speakText(`${product.name}, Price: ${product.price}, Category: ${product.category}, Description: ${product.description}`)}
+                onMouseEnter={() => speakText(`${product.name}, Price: ${product.price}, ${product.description}`)}
                 onMouseLeave={stopSpeech}
               >
                 <img src={product.image} alt={product.name} className={styles.productImage} />
@@ -241,3 +244,4 @@ const Products = () => {
 };
 
 export default Products;
+

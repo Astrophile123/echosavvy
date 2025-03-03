@@ -1,5 +1,5 @@
 .productDisplay {
-  padding-top: 150px; /* Add space at the top for the sticky search bar */
+  padding-top: 150px; 
 }
 
 .topBar {
@@ -72,13 +72,12 @@
   border-radius: 8px;
 }
 
-
-
-
 .noResults {
   text-align: center;
-  font-size: 18px;
+  font-size: 25px;
   color: #666;
+  margin-bottom: 2000px; 
+  padding: 20px; 
 }
 
 .searchBar {
@@ -227,6 +226,27 @@
   text-decoration: none;
   margin-right: 16px; 
 }
+.popup {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #4caf50; /* Green background */
+  color: white;
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
 
 .homeButton:hover {
   background-color: #f45612;
@@ -282,7 +302,7 @@
   color:  #f45612;
 }
 
-.homeButton, .cartButton {
+.logoutButton, .cartButton {
   text-decoration: none;
   font-size: 16px;
   padding: 5px 10px;
@@ -294,5 +314,4 @@
 .homeButton:hover, .cartButton:hover {
   background:  #f45612;
 }
-
 
