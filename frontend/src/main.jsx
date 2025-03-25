@@ -29,9 +29,9 @@ const router = createBrowserRouter([
   {
     path: '/cart',
     element: <Cart />,
-  }, // ✅ Added missing comma
+  }, 
   {
-    path: '/checkout', // ✅ Added missing comma
+    path: '/checkout', 
     element: <Checkout />,
   },
 ]);

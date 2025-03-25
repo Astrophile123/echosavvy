@@ -36,14 +36,14 @@ const Products = () => {
   const { addToCart } = useCart();
   const user_id = localStorage.getItem("user_id");
 
-  // ✅ Wrap handleSpeechResult inside useCallback
+  
   const handleSpeechResult = useCallback((event) => {
     const transcript = event.results[0][0].transcript;
     setSearchTerm(transcript);
     handleSearch({ target: { value: transcript } });
   }, []);
 
-  // ✅ Wrap handleSpeechError inside useCallback
+
   const handleSpeechError = useCallback(() => {
     speakText("Sorry, I couldn't understand you. Please try again.");
   }, []);
@@ -68,7 +68,7 @@ const Products = () => {
       if (recognitionRef.current) recognitionRef.current.stop();
       if (synth) synth.cancel();
     };
-  }, [handleSpeechResult, handleSpeechError]); // ✅ Dependencies added safely
+  }, [handleSpeechResult, handleSpeechError]);
 
   const startVoiceSearch = () => {
     if (recognitionRef.current) {
@@ -144,7 +144,7 @@ const Products = () => {
   const handleLogout = () => {
     localStorage.removeItem("user_id");
     localStorage.removeItem("token");
-    navigate("/userlogin");
+    navigate("/login");
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import styles from "./Home.module.css";
 import { Link } from 'react-router-dom';
 import homeimg from "./home.webp";
@@ -12,15 +12,15 @@ const Home = () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 1.2;
+      utterance.lang = 'en-IN';
+      utterance.rate = 1;
       utterance.pitch = 1;
 
       const voices = window.speechSynthesis.getVoices();
       const femaleVoice = voices.find(voice => 
         voice.name.includes('Female') || 
         voice.name.includes('Samantha') || 
-        voice.name.includes('Google UK English Female')
+        voice.name.includes('Google Indian English Female')
       );
 
       if (femaleVoice) {
@@ -72,7 +72,7 @@ const Home = () => {
         className={styles.heading} 
         tabIndex="0" 
         data-focusable="true" 
-        aria-label="EchoSavvy: Home Page"
+        aria-label="EchoSavvy: Home Page . Move to the right for login button"
       >
         EchoSavvy
       </h1>
@@ -94,7 +94,7 @@ const Home = () => {
           className={styles.welcome}
           tabIndex="0"
           data-focusable="true"
-          aria-label="Welcome to EchoSavvy! We are an e-commerce platform designed to empower and assist visually impaired users. Our platform prioritizes accessibility, usability, and inclusivity to ensure a seamless shopping experience for everyone."
+          aria-label="Welcome to EchoSavvy! We are an e-commerce platform designed to empower and assist visually impaired users. Our platform prioritizes accessibility, usability, and inclusivity to ensure a seamless shopping experience for everyone. Move to the top right for login button"
         >
           Welcome to EchoSavvy! We are an e-commerce platform designed to empower and assist visually impaired users. Our platform prioritizes accessibility, usability, and inclusivity to ensure a seamless shopping experience for everyone.
         </p>
@@ -105,7 +105,7 @@ const Home = () => {
           alt="EchoSavvy logo"
           tabIndex="0"
           data-focusable="true"
-          aria-label="EchoSavvy homepage illustration."
+          aria-label="EchoSavvy homepage illustration. Move to the top right for login button"
         />
       </div>
 
@@ -114,7 +114,7 @@ const Home = () => {
           className={styles.copy} 
           tabIndex="0" 
           data-focusable="true" 
-          aria-label="Copyright 2025 EchoSavvy. All rights reserved."
+          aria-label="Copyright 2025 EchoSavvy. All rights reserved. Move to the top right for login button"
         >
           &copy; 2025 EchoSavvy. All rights reserved.
         </p>
@@ -123,7 +123,7 @@ const Home = () => {
           className={styles.support} 
           tabIndex="0" 
           data-focusable="true" 
-          aria-label="For support, contact echosavvy@gmail.com"
+          aria-label="For support, contact echosavvy@gmail.com .Move to the top right for login button"
         >
           For support: echosavvy@gmail.com
         </p>

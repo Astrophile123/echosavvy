@@ -16,7 +16,7 @@ export const speakText = (text, voices = []) => {
   
     utterance.lang = "en-IN"; 
     utterance.rate = 1; 
-    utterance.pitch = 1.2; 
+    utterance.pitch = 1.0; 
   
     window.speechSynthesis.speak(utterance);
   };

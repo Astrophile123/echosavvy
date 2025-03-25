@@ -10,6 +10,7 @@ const Login = () => {
   const [currentField, setCurrentField] = useState(null);
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
+  const inputTimeout = useRef(null);
   const navigate = useNavigate();
 
   const base64urlToUint8Array = (base64url) => {
@@ -30,7 +31,7 @@ const Login = () => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-IN';
     utterance.rate = 1;
-    utterance.pitch = 1.2;
+    utterance.pitch = 1;
     utterance.voice = synthRef.current.getVoices().find(voice => voice.name.includes("Google UK English Female")) || synthRef.current.getVoices()[0];
     synthRef.current.speak(utterance);
   }, []);
@@ -41,10 +42,23 @@ const Login = () => {
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = 'en-US';
+      recognition.lang = 'en-IN';
 
       recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.trim();
+        clearTimeout(inputTimeout.current);
+        const transcript = event.results[0][0].transcript.trim().toLowerCase();
+
+        if (transcript.includes("please say your ") ||
+         transcript.includes("no input detected")||
+         transcript.includes("nerve import detected")||
+         transcript.includes("please try again")) return;
+
+        if (!transcript) {
+          speakText("No input detected. Please try again.");
+          setTimeout(() => recognitionRef.current.start(), 5000);
+          return;
+        }
+
         setUserData((prev) => ({ ...prev, [currentField]: transcript }));
         speakText(`You entered: ${transcript}`);
       };
@@ -60,16 +74,31 @@ const Login = () => {
 
   const handleFieldFocus = useCallback((field) => {
     setCurrentField(field);
+
     if (recognitionRef.current) {
       recognitionRef.current.abort();
-      setTimeout(() => recognitionRef.current.start(), 200);
     }
-    speakText(`Please say your ${field}`);
-  }, [speakText]);
 
-  const handleMouseHover = (message) => {
-    speakText(message);
-  };
+    speakText(`Please say your ${field}`);
+
+    setTimeout(() => {
+      if (recognitionRef.current) {
+        recognitionRef.current.start();
+      }
+    }, 1000);
+
+    clearTimeout(inputTimeout.current);
+
+inputTimeout.current = setTimeout(() => {
+  if (!userData[currentField]) { 
+    speakText("No input detected. Please try again.");
+    setTimeout(() => {
+      if (recognitionRef.current) recognitionRef.current.start();
+    }, 1000);
+  }
+}, 5000);
+
+  }, [speakText]);
 
   const authenticateWithFingerprint = async () => {
     try {
@@ -78,7 +107,7 @@ const Login = () => {
       speakText("Fetching authentication challenge. Please wait.");
       const challengeResponse = await axios.post('http://localhost:8082/api/get-challenge', { username: userData.username });
       if (!challengeResponse.data.success) throw new Error(challengeResponse.data.message || "Failed to get challenge.");
-      
+
       const { challenge, credential_id } = challengeResponse.data;
       if (!challenge || !credential_id) throw new Error("Invalid challenge response from server.");
 
@@ -91,9 +120,9 @@ const Login = () => {
           timeout: 60000,
         },
       });
-      
+
       if (!credential) throw new Error("Fingerprint authentication failed.");
-      
+
       const response = await axios.post('http://localhost:8082/api/login', {
         username: userData.username,
         credential_id: uint8ArrayToBase64(credential.rawId),
@@ -119,9 +148,9 @@ const Login = () => {
 
   return (
     <div className={styles.mainContainer}>
-      <h1 className={styles.pageHeading} onMouseEnter={() => handleMouseHover("Welcome to EchoSavvy login page")}>Echosavvy</h1>
+      <h1 className={styles.pageHeading} onMouseEnter={() => speakText("Welcome to EchoSavvy login page")}>Echosavvy</h1>
       <div className={styles.formContainer}>
-        <h2 onMouseEnter={() => handleMouseHover("Login page")}>Login</h2>
+        <h2 onMouseEnter={() => speakText("Login page")}>Login</h2>
         <input
           type="text"
           required
@@ -129,16 +158,16 @@ const Login = () => {
           value={userData.username}
           onFocus={() => handleFieldFocus('username')}
           onChange={(e) => setUserData({ ...userData, username: e.target.value })}
-          onMouseEnter={() => handleMouseHover("Enter your username")}
+          onMouseEnter={() => speakText("Enter your username")}
           className={styles.userPhoneInput}
           disabled={loading}
         />
-        {errorMessage && <p className={styles.errorMessage} onMouseEnter={() => handleMouseHover(errorMessage)}>{errorMessage}</p>}
-        <button className={styles.submitButton} onClick={authenticateWithFingerprint} onMouseEnter={() => handleMouseHover("Click to login with fingerprint")} disabled={loading}>
+        {errorMessage && <p className={styles.errorMessage} onMouseEnter={() => speakText(errorMessage)}>{errorMessage}</p>}
+        <button className={styles.submitButton} onClick={authenticateWithFingerprint} onMouseEnter={() => speakText("Click to login with fingerprint")} disabled={loading}>
           {loading ? 'Authenticating...' : 'Login with Fingerprint'}
         </button>
-        <Link to="/signup" onMouseEnter={() => handleMouseHover("Go to Signup Page")}> 
-          <p className={styles.link}>Don't Have An Account? Signup now!</p>
+        <Link to="/signup" onMouseEnter={() => speakText("Go to Signup Page")}> 
+          <p className={styles.link}>Don&apos;t Have An Account? Signup now!</p>
         </Link>
       </div>
     </div>
@@ -146,5 +175,4 @@ const Login = () => {
 };
 
 export default Login;
-
 

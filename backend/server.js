@@ -5,9 +5,9 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/auth');
 
-dotenv.config();
+//dotenv.config();
 const app = express();
-const SECRET_KEY = process.env.SECRET_KEY || "your_secret_key";
+
 
 const corsOptions = {
     origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'], 

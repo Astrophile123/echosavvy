@@ -4,7 +4,7 @@ window.onload = function() {
         .then(response => response.json())
         .then(data => {
             const productsContainer = document.getElementById('products');
-            productsContainer.innerHTML = '';  // Clear any existing content
+            productsContainer.innerHTML = '';  
 
             data.forEach(product => {
                 const productDiv = document.createElement('div');
@@ -20,7 +20,6 @@ window.onload = function() {
         .catch(error => console.error('Error:', error));
 };
 
-// Search function to filter products by name
 function searchProducts() {
     const query = document.getElementById('searchBox').value.toLowerCase();
     const products = document.getElementsByClassName('product');
@@ -34,7 +33,7 @@ function searchProducts() {
         }
     });
 }
-// Assuming products are already fetched and displayed
+
 data.forEach(product => {
     const productDiv = document.createElement('div');
     productDiv.classList.add('product');

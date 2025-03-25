@@ -1,3 +1,4 @@
+
 .cartPage {
   padding: 20px;
   max-width: 1200px;
@@ -16,7 +17,7 @@
 
 .cartItems {
   display: flex;
-  flex-direction: column;
+  flex-direction:column;
   gap: 20px;
 }
 
@@ -94,6 +95,7 @@
   color: white;
   cursor: pointer;
   transition: background-color 0.3s;
+  margin-left: 18px;
 }
 
 .removeButton:hover {
@@ -103,6 +105,9 @@
 .cartTotal {
   margin-top: 20px;
   text-align: right;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
 .cartTotal h3 {
@@ -160,6 +165,12 @@
   z-index: 1000;
   animation: slideIn 0.5s ease-out;
 }
+.cartHeader{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 100px;
+}
 
 @keyframes slideIn {
   from {
@@ -168,4 +179,17 @@
   to {
     transform: translateX(0);
   }
+}
+.continueShopping {
+  padding: 10px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  background-color: #f39c12;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-left: auto; 
+  display: block; 
+  width: fit-content; 
 }

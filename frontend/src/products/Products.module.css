@@ -1,5 +1,5 @@
 .productDisplay {
-  padding-top: 150px; 
+  padding-top: 20px; 
 }
 
 .topBar {
@@ -40,7 +40,7 @@
   font-size: 16px;
 }
 
-.homeButton,
+
 .cartButton {
   display: flex;
   align-items: center;
@@ -109,7 +109,7 @@
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px; 
   padding: 20px;
-  padding-top: 10rem;
+  padding-top: 1rem;
   max-width: 1200px;
   margin: 0 auto; 
 }
@@ -225,27 +225,6 @@
   border-radius: 4px;
   text-decoration: none;
   margin-right: 16px; 
-}
-.popup {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #4caf50; /* Green background */
-  color: white;
-  padding: 15px;
-  border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  animation: slideIn 0.5s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
 }
 
 .homeButton:hover {
