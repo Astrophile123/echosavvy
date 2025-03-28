@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { TiShoppingCart } from "react-icons/ti";
+import { TiShoppingCart , TiHome } from "react-icons/ti";
 import { HiMicrophone } from "react-icons/hi2";
 import styles from "./Products.module.css";
 import { useCart } from "../cart/CartContext";
@@ -36,6 +36,10 @@ const Products = () => {
   const { addToCart } = useCart();
   const user_id = localStorage.getItem("user_id");
 
+  const goToHome = () => {
+    speakText("Going to home page");
+    navigate("/");
+  };
   
   const handleSpeechResult = useCallback((event) => {
     const transcript = event.results[0][0].transcript;
@@ -99,6 +103,7 @@ const Products = () => {
     const value = e.target.value.toLowerCase();
     setSearchTerm(value);
     setFilteredProducts(value ? products.filter(p => p.name.toLowerCase().includes(value)) : products);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleAddToCart = async (product) => {
@@ -142,11 +147,7 @@ const Products = () => {
     navigate("/cart");
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
+
 
   return (
     <main className={styles.productDisplay}>
@@ -158,7 +159,7 @@ const Products = () => {
         <div className={styles.searchContainer}>
           <input
             type="text"
-            placeholder="Search products..."
+            placeholder="Search products ..."
             className={styles.searchBar}
             value={searchTerm}
             onChange={handleSearch}
@@ -178,20 +179,19 @@ const Products = () => {
           />
         </div>
 
-        {user_id ? (
-          <>
-            <Link to={`/cart/${user_id}`} className={styles.cartButton}>
-              <TiShoppingCart size={24} /> Cart
-            </Link>
-            <button className={styles.logoutButton} onClick={handleLogout}>
-              Logout
-            </button>
-          </>
-        ) : (
-          <Link to="/cart" className={styles.cartButton} onMouseEnter={() => speakText("Click here to go to cart")}>
+        <div className={styles.userActions}>
+          <Link to={user_id ? `/cart/${user_id}` : "/cart"} className={styles.cartButton}>
             <TiShoppingCart size={24} /> Cart
           </Link>
-        )}
+          <button
+            className={styles.homeButton}
+            onClick={goToHome}
+            onMouseEnter={() => speakText("Click here to go to home page")}
+            onMouseLeave={stopSpeech}
+          >
+            <TiHome size={24} /> Home
+          </button>
+        </div>
       </div>
 
       <div className={styles.productsDisp}>

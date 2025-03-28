@@ -1,13 +1,11 @@
-.productDisplay {
-  padding-top: 20px; 
-}
+
 
 .topBar {
   position: sticky;
   top: 0;
-  background-color: #fff;
+  /* background-color: #fff; */
   padding: 10px 20px;
- 
+  height: 70px;
   z-index: 1000; 
   display: flex;
   justify-content: space-between;
@@ -15,23 +13,9 @@
 }
 
 .searchContainer {
-  flex-grow: 10;
-  margin-right: 20px;
-}
-.productDisplay {
-  padding: 20px;
-}
-
-.topBar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.searchContainer {
-  flex-grow: 1;
-  margin: 0 20px;
+ margin-bottom: 1rem;
+ margin-top: 1rem;
+ z-index: 1;
 }
 
 .searchBar {
@@ -49,14 +33,14 @@
   font-size: 16px;
 }
 
-.productsDisp {
-  margin-top: 20px;
-}
 
 .productGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .productCard {
@@ -76,7 +60,7 @@
   text-align: center;
   font-size: 25px;
   color: #666;
-  margin-bottom: 2000px; 
+  margin-bottom: 2rem; 
   padding: 20px; 
 }
 
@@ -87,18 +71,6 @@
   border-radius: 5px;
   font-size: 16px;
 }
-.cartButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  color: #ffffff;
-  font-size: 16px;
-  padding: 10px 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #f39c12;
-}
 
 .cartButton:hover {
   background-color: #f45612;
@@ -107,15 +79,15 @@
 .productGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px; 
-  padding: 20px;
-  padding-top: 1rem;
+  gap: 20px;  
+  padding-top: 80rem;
   max-width: 1200px;
-  margin: 0 auto; 
 }
+
 .productsDisp{
-  padding-top: 105rem;
+  padding-top: 108rem;
 }
+
 .productImage {
   width: 100%;
   height: auto;
@@ -215,21 +187,6 @@
   cursor: pointer;
 }
 
-.homeButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background-color: #f39c12;
-  color: white;
-  border-radius: 4px;
-  text-decoration: none;
-  margin-right: 16px; 
-}
-
-.homeButton:hover {
-  background-color: #f45612;
-}
 .microphoneIcon {
   cursor: pointer;
   color: #f39c12;
@@ -281,16 +238,32 @@
   color:  #f45612;
 }
 
-.logoutButton, .cartButton {
-  text-decoration: none;
-  font-size: 16px;
-  padding: 5px 10px;
-  background: #f39c12;
-  color: white;
-  border-radius: 5px;
-}
+ 
 
 .homeButton:hover, .cartButton:hover {
   background:  #f45612;
 }
+
+.userActions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.cartButton, .homeButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  background-color: #f39c12;
+  color: white;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 16px;
+  border: #000;
+  transition: background-color 0.3s ease;
+}
+
+
+
 
