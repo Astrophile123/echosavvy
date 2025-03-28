@@ -53,17 +53,30 @@ const Login = () => {
          transcript.includes("nerve import detected")||
          transcript.includes("please try again")) return;
 
-        if (!transcript) {
-          speakText("No input detected. Please try again.");
-          setTimeout(() => recognitionRef.current.start(), 5000);
-          return;
-        }
-
+      if (transcript.length>1){
         setUserData((prev) => ({ ...prev, [currentField]: transcript }));
         speakText(`You entered: ${transcript}`);
-      };
 
-      recognition.onerror = () => speakText('Voice input failed. Please try again.');
+        if (recognitionRef.current){
+          recognitionRef.current.abort();
+        }
+        recognitionRef.current.inputReceived = true;  
+  } else {
+    speakText("No input detected. Please try again.");
+    setTimeout(() => recognitionRef.current.start(), 2000);
+        }
+      };
+      
+      recognition.onend = () => {
+        setTimeout(() => {
+        if(!recognitionRef.current.inputReceived) {
+          speakText("No input detected. Please try again.");
+          setTimeout(() => recognition.start(),5000);
+        }
+        recognitionRef.current.inputReceived = false;  
+      },500);
+      };
+      
       recognitionRef.current = recognition;
     } else {
       speakText('Sorry, your browser does not support voice input.');
@@ -85,19 +98,7 @@ const Login = () => {
       if (recognitionRef.current) {
         recognitionRef.current.start();
       }
-    }, 1000);
-
-    clearTimeout(inputTimeout.current);
-
-inputTimeout.current = setTimeout(() => {
-  if (!userData[currentField]) { 
-    speakText("No input detected. Please try again.");
-    setTimeout(() => {
-      if (recognitionRef.current) recognitionRef.current.start();
-    }, 1000);
-  }
-}, 5000);
-
+    }, 1500);
   }, [speakText]);
 
   const authenticateWithFingerprint = async () => {

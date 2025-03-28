@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/auth');
 
-//dotenv.config();
+
 const app = express();
 
 
@@ -27,16 +27,16 @@ const db = mysql.createConnection({
     database: "ecommerce"
 });
 
-// 🔹 Connect to MySQL
+
 db.connect((err) => {
     if (err) {
         console.error("❌ MySQL Connection Error:", err);
-        process.exit(1); // Exit process on DB connection failure
+        process.exit(1); 
     }
     console.log("✅ Connected to MySQL");
 });
 
-// **User Signup (Fingerprint Authentication)**
+
 app.post('/signup', async (req, res) => {
     const { username, phone, credential_id, public_key } = req.body;
 
@@ -94,7 +94,6 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// **Get All Products**
 app.get('/products', async (req, res) => {
     try {
         const [products] = await db.promise().query("SELECT * FROM products");
@@ -106,7 +105,7 @@ app.get('/products', async (req, res) => {
     }
 });
 
-// **Middleware for Authentication**
+
 const authenticateToken = (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1];
 

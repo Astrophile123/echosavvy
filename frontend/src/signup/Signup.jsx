@@ -33,31 +33,39 @@ const Signup = () => {
       recognition.interimResults = false;
       recognition.lang = 'en-IN';
 
+
       recognition.onresult = (event) => {
         clearTimeout(inputTimeout.current);
         const transcript = event.results[0][0].transcript.trim().toLowerCase();
-
-        if (transcript.includes("please say your") || transcript.includes("no input detected")) return;
-
-        if (!transcript) {
-          speakText("No input detected. Please try again.");
-          setTimeout(() => recognitionRef.current.start(), 5000);
-          return;
+    
+        if (transcript.length > 1) {
+            recognitionRef.current.inputReceived = true;
+            setUserData((prev) => ({ ...prev, [currentField]: transcript }));
+            speakText(`You entered: ${transcript}`);
+        } else {
+            recognitionRef.current.inputReceived = false;
+            speakText("No input detected. Please try again.");
+            setTimeout(() => recognitionRef.current.start(), 2000);
         }
-
-        setUserData((prev) => ({ ...prev, [currentField]: transcript }));
-        speakText(`You entered: ${transcript}`);
+    };
+    
+    recognition.onend = () => {
+        setTimeout(() => {
+            if (!recognitionRef.current.inputReceived) { 
+                speakText("No input detected. Please try again.");
+                setTimeout(() => recognitionRef.current.start(), 5000); 
+            }
+            recognitionRef.current.inputReceived = false;  
+        }, 500);
+    
       };
-
-      recognition.onerror = () => speakText('Voice input failed. Please try again.');
-      recognitionRef.current = recognition;
-    } else {
-      speakText('Sorry, your browser does not support voice input.');
-    }
-
-    return () => recognitionRef.current?.stop();
-  }, [currentField, speakText]);
-
+        recognitionRef.current = recognition;
+      } else {
+        speakText('Sorry, your browser does not support voice input.');
+      }
+  
+      return () => recognitionRef.current?.stop();
+    }, [currentField, speakText]);
   const handleFieldFocus = useCallback((field) => {
     setCurrentField(field);
 
@@ -71,17 +79,7 @@ const Signup = () => {
       if (recognitionRef.current) {
         recognitionRef.current.start();
       }
-    }, 1000);
-
-    clearTimeout(inputTimeout.current);
-    inputTimeout.current = setTimeout(() => {
-      if (!userData[currentField]) {
-        speakText("No input detected. Please try again.");
-        setTimeout(() => {
-          if (recognitionRef.current) recognitionRef.current.start();
-        }, 1000);
-      }
-    }, 5000);
+    }, 2000);
   }, [speakText]);
 
   const base64urlEncode = (buffer) =>
@@ -89,48 +87,48 @@ const Signup = () => {
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
+      const registerFingerprint = async () => {
+        try {
+          const publicKeyCredential = await navigator.credentials.create({
+            publicKey: {
+              challenge: crypto.getRandomValues(new Uint8Array(32)),
+              rp: { name: 'Echosavvy' },
+              user: {
+                id: new TextEncoder().encode(userData.username),
+                name: userData.username,
+                displayName: userData.username,
+              },
+              pubKeyCredParams: [
+                { type: 'public-key', alg: -7 },
+                { type: 'public-key', alg: -257 },
+              ],
+              authenticatorSelection: { authenticatorAttachment: 'platform' },
+              timeout: 60000,
+              attestation: 'none',
+            },
+          });
+      
+          if (!publicKeyCredential) throw new Error('Fingerprint registration failed.');
+      
+          const credential_id = publicKeyCredential.id;
+          const public_key = base64urlEncode(publicKeyCredential.response.clientDataJSON);
+      
+          return { credential_id, public_key };
+        } catch (error) {
+          console.error(error);
+          setErrorMessage('Fingerprint registration failed. Please try again.');
+          speakText('Fingerprint registration failed. Please try again.');
+          return null;
+        }
+      };
 
-  const registerFingerprint = async () => {
-    try {
-      const publicKeyCredential = await navigator.credentials.create({
-        publicKey: {
-          challenge: new Uint8Array(32),
-          rp: { name: 'Echosavvy' },
-          user: {
-            id: new Uint8Array(16),
-            name: userData.username,
-            displayName: userData.username,
-          },
-          pubKeyCredParams: [
-            { type: 'public-key', alg: -7 },
-            { type: 'public-key', alg: -257 },
-          ],
-          authenticatorSelection: { authenticatorAttachment: 'platform' },
-          timeout: 60000,
-          attestation: 'none',
-        },
-      });
-
-      if (!publicKeyCredential) throw new Error('Fingerprint registration failed.');
-
-      const credential_id = publicKeyCredential.id;
-      const public_key = base64urlEncode(publicKeyCredential.response.attestationObject);
-
-      return { credential_id, public_key };
-    } catch (error) {
-      console.error(error);
-      setErrorMessage('Fingerprint registration failed. Please try again.');
-      speakText('Fingerprint registration failed. Please try again.');
-      return null;
-    }
-  };
-
+      
   const registerUser = async () => {
     const fingerprintData = await registerFingerprint();
     if (!fingerprintData) return;
 
     try {
-      const response = await axios.post('http://localhost:8082/signup', {
+      const response = await axios.post('http://localhost:8082/api/signup', {
         ...userData,
         credential_id: fingerprintData.credential_id,
         public_key: fingerprintData.public_key,

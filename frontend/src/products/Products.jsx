@@ -84,7 +84,8 @@ const Products = () => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-IN";
     utterance.rate = 1;
-    utterance.pitch = 1.2;
+    utterance.pitch = 1;
+    utterance.voice = synthRef.current.getVoices().find(voice => voice.name.includes("Google UK English Female")) || synthRef.current.getVoices()[0];
     synthRef.current.speak(utterance);
   };
 
