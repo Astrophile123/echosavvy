@@ -26,34 +26,46 @@ div {
   left: 20px;
   margin-left: 40px;
 }
-
-/* Button styles */
-.login {
-  display: flex; /* Align items horizontally */
-  align-items: center; /* Vertically center the items */
-  justify-content: center; /* Center content horizontally (if needed) */
-  gap: 8px; 
-  background-color: #f39c12; /* Warm yellow button */
-  color: #fff;
-  border: none;
+.login,
+.productsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 15px 20px;
+  width: 100px;
+  height: 45px;
   border-radius: 5px;
-  padding: 10px 20px;
-  font-size: 1rem;
+  font-size: 15px;
   font-weight: bold;
   cursor: pointer;
+  border: none;
+  transition: background-color 0.3s ease;
+  text-decoration: none !important;
+  background-color: #f39c12;
+  color: white;
   position: absolute;
   top: 20px;
-  right: 20px;
-  transition: background-color 0.3s ease;
-  margin-top: 20px;
-  margin-right:40px;
+}
+
+
+.login {
+  right: 60px;
+  padding-left: 5px; 
+}
+
+.productsBtn {
+  right: 180px; 
+  padding-left: 1px; 
+  padding-right: 7px;
+ 
 }
 
 .login:hover {
-  background-color: #f35c1b; /* Slightly darker yellow on hover */
+  background-color: #f35c1b;
 }
 
-/* Content section */
+
 .content {
   display: flex;
   align-items: center;
@@ -79,10 +91,20 @@ div {
   
 }
 
-/* Footer styles */
+
+.button-text {
+  white-space: nowrap; 
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+    position: relative;
+    top: 1px; /* Fine-tune text vertical alignment */
+  
+}
+
 .session {
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: #666; /* Subtle gray text */
   margin-top: 40px;
   padding: 10px 0;
@@ -101,7 +123,7 @@ div {
 .replayButton {
   margin-top: 10px;
   padding: 8px 12px;
-  background-color: #4caf50;
+  background-color: #f39c12;;
   color: white;
   border: none;
   border-radius: 5px;
@@ -109,6 +131,20 @@ div {
   font-size: 16px;
   transition: background-color 0.3s;
 }
+.buttonGroup {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 15px;
+}
+.productsBtn:hover, 
+.productsBtn:focus {
+  background: #f35c1b;
+  outline: none;
+  text-decoration: none !important;
+}
 
-
-
+.productsBtn svg {
+  font-size: 1.2rem;
+}

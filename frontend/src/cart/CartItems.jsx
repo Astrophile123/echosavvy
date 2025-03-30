@@ -1,44 +1,55 @@
-import React from "react";
-import { FaTrash } from "react-icons/fa";
-import { useCart } from "./CartContext";
+import React, { useContext } from "react";
+import { CartContext } from "../context/CartContext";
+import styles from "../styles/Cart.module.css";
 
-const CartItems = ({ item, onMouseEnter, onMouseLeave }) => {
-  const { product_id, product_name, price, quantity, image_url } = item;
-  const { removeItem, increaseAmount, decreaseAmount } = useCart();
+const CartItems = () => {
+  const { cartItems, updateQuantity, removeFromCart } = useContext(CartContext);
+
+  const handleMouseEnter = (text) => {
+    if (!window.speechSynthesis.speaking) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   return (
-    <div
-      className="cart-item"
-      aria-label={`Cart item: ${product_name}, Quantity: ${quantity}, Price: ${price}`}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      <div className="cart-image--name">
-        <img src={image_url} alt={product_name} aria-hidden="true" />
-        <p>{product_name}</p>
-      </div>
-      <p aria-label={`Price: ${price}`}>${price}</p>
-      <div className="cart-amount-toggle">
-        <button
-          onClick={() => decreaseAmount(product_id)} 
-          aria-label={`Decrease quantity of ${product_name}. Current quantity: ${quantity}`}
-        >
-          -
-        </button>
-        <span aria-label={`Quantity: ${quantity}`}>{quantity}</span>
-        <button
-          onClick={() => increaseAmount(product_id)} 
-          aria-label={`Increase quantity of ${product_name}. Current quantity: ${quantity}`}
-        >
-          +
-        </button>
-      </div>
-      <p aria-label={`Total: ${price * quantity}`}>Total: ${(price * quantity).toFixed(2)}</p>
-      <FaTrash
-        className="remove-icon"
-        onClick={() => removeItem(product_id)}
-        aria-label={`Remove ${product_name} from cart. To remove, please click on this button.`}
-      />
+    <div className={styles.cartItems}>
+      {cartItems.length === 0 ? (
+        <p className={styles.noResults}>Your cart is empty</p>
+      ) : (
+        cartItems.map((item) => (
+          <div
+            key={item.id}
+            className={styles.cartItem}
+            onMouseEnter={() => handleMouseEnter(item.product_name)}
+          >
+            <div className={styles.cartImageName}>
+              <img
+                src={item.image_url}
+                alt={item.product_name}
+                className={styles.cartImage}
+              />
+              <p className={styles.cartProductName}>{item.product_name}</p>
+            </div>
+            <div className={styles.cartAmountToggle}>
+              <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+                -
+              </button>
+              <span>{item.quantity}</span>
+              <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                +
+              </button>
+            </div>
+            <p className={styles.cartPrice}>${(item.price * item.quantity).toFixed(2)}</p>
+            <button
+              className={styles.removeButton}
+              onClick={() => removeFromCart(item.id)}
+            >
+              Remove
+            </button>
+          </div>
+        ))
+      )}
     </div>
   );
 };

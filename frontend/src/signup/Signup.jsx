@@ -1,29 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import styles from "./Signup.module.css";
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import styles from './Signup.module.css';
 
 const Signup = () => {
   const [userData, setUserData] = useState({ username: '', phone: '' });
   const [errorMessage, setErrorMessage] = useState('');
   const [currentField, setCurrentField] = useState(null);
   const recognitionRef = useRef(null);
+  const navigate = useNavigate();
   const synthRef = useRef(window.speechSynthesis);
   const inputTimeout = useRef(null);
-  const navigate = useNavigate();
 
-  const speakText = useCallback((text) => {
-    if (!synthRef.current) return;
-    synthRef.current.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-IN';
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.voice =
-      synthRef.current.getVoices().find((voice) => voice.name.includes("Google UK English Female")) ||
-      synthRef.current.getVoices()[0];
-    synthRef.current.speak(utterance);
-  }, []);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window) {
@@ -33,54 +21,77 @@ const Signup = () => {
       recognition.interimResults = false;
       recognition.lang = 'en-IN';
 
-
       recognition.onresult = (event) => {
-        clearTimeout(inputTimeout.current);
-        const transcript = event.results[0][0].transcript.trim().toLowerCase();
-    
-        if (transcript.length > 1) {
-            recognitionRef.current.inputReceived = true;
-            setUserData((prev) => ({ ...prev, [currentField]: transcript }));
-            speakText(`You entered: ${transcript}`);
-        } else {
-            recognitionRef.current.inputReceived = false;
-            speakText("No input detected. Please try again.");
-            setTimeout(() => recognitionRef.current.start(), 2000);
+        const transcript = event.results[0][0].transcript.trim();
+        console.log(`Recognized speech: ${transcript}`);
+
+        setUserData((prev) => ({
+          ...prev,
+          [currentField]: transcript
+        }));
+
+        if (transcript.toLowerCase() === 'submit') {
+          registerUser();
         }
-    };
-    
-    recognition.onend = () => {
-        setTimeout(() => {
-            if (!recognitionRef.current.inputReceived) { 
-                speakText("No input detected. Please try again.");
-                setTimeout(() => recognitionRef.current.start(), 5000); 
-            }
-            recognitionRef.current.inputReceived = false;  
-        }, 500);
-    
+
+        speakText(`You entered: ${transcript}`);
       };
-        recognitionRef.current = recognition;
-      } else {
-        speakText('Sorry, your browser does not support voice input.');
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        speakText('Error with voice input. Please try again.');
+      };
+
+      recognitionRef.current = recognition;
+    } else {
+      console.error('Speech Recognition API is not supported in this browser.');
+    }
+
+    return () => {
+      if (recognitionRef.current) recognitionRef.current.stop();
+    };
+  }, [currentField]);
+
+  
+  const speakText = (text) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 1;
+      utterance.pitch = 1;
+  
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(voice => voice.name.includes('Female') || voice.name.includes('Samantha') || voice.name.includes('Google UK English Female'));
+  
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
       }
   
-      return () => recognitionRef.current?.stop();
-    }, [currentField, speakText]);
-  const handleFieldFocus = useCallback((field) => {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+  
+
+  const confirmDetails = () => {
+    speakText(`You entered username: ${userData.username} and phone number: ${userData.phone}.`);
+  };
+  
+  const handleFieldFocus = (field, message) => {
     setCurrentField(field);
 
     if (recognitionRef.current) {
       recognitionRef.current.abort();
+      setTimeout(() => recognitionRef.current.start(), 200);
     }
 
-    speakText(`Please say your ${field}`);
+    speakText(message);
+  };
 
-    setTimeout(() => {
-      if (recognitionRef.current) {
-        recognitionRef.current.start();
-      }
-    }, 2000);
-  }, [speakText]);
+  
+  const handleMouseHover = (message) => {
+    speakText(message);
+  };
 
   const base64urlEncode = (buffer) =>
     btoa(String.fromCharCode(...new Uint8Array(buffer)))
@@ -111,9 +122,12 @@ const Signup = () => {
           if (!publicKeyCredential) throw new Error('Fingerprint registration failed.');
       
           const credential_id = publicKeyCredential.id;
-          const public_key = base64urlEncode(publicKeyCredential.response.clientDataJSON);
+          const publicKey = publicKeyCredential.response.getPublicKey
+            ? base64urlEncode(publicKeyCredential.response.getPublicKey())
+            : base64urlEncode(publicKeyCredential.response.attestationObject);
       
-          return { credential_id, public_key };
+          return { credential_id, public_key: publicKey }; // ✅ Fixed Typo
+      
         } catch (error) {
           console.error(error);
           setErrorMessage('Fingerprint registration failed. Please try again.');
@@ -122,11 +136,21 @@ const Signup = () => {
         }
       };
 
-      
   const registerUser = async () => {
     const fingerprintData = await registerFingerprint();
-    if (!fingerprintData) return;
-
+    console.log("📤 Initiating fingerprint-based signup...");
+    if (!fingerprintData) {
+      setErrorMessage('Fingerprint registration failed. Please try again.');
+      speakText('Fingerprint registration failed. Please try again.');
+      return;
+    }
+    
+    if (!userData.username.trim() || !userData.phone.trim()) {
+      setErrorMessage("Username and phone number are required.");
+      speakText("Username and phone number are required.");
+      return;
+    }
+  
     try {
       const response = await axios.post('http://localhost:8082/api/signup', {
         ...userData,
@@ -147,39 +171,61 @@ const Signup = () => {
     }
   };
 
+
   return (
     <div className={styles.mainContainer}>
-      <h1 className={styles.pageHeading} onMouseEnter={() => speakText('Welcome to Echosavvy signup page')}>
-        Echosavvy
-      </h1>
+      <h1 
+  className={styles.pageHeading} 
+  onMouseEnter={() => handleMouseHover('Welcome to Echosavvy sign up page.')}
+>
+  Echosavvy
+</h1>
+
+
       <div className={styles.formContainer}>
-        <h2 onMouseEnter={() => speakText('Signup Form')}>Signup</h2>
+        <h2>Signup</h2>
+
         <input
           type="text"
+          required
           placeholder="Enter Your Username"
-          value={userData.username}
-          onFocus={() => handleFieldFocus('username')}
-          onChange={(e) => setUserData({ ...userData, username: e.target.value })}
-          onMouseEnter={() => speakText('Enter your username')}
-          className={styles.userInput}
+          value={userData.username}  // FIXED: Changed from name to username
+          onFocus={() => handleFieldFocus('username', 'Enter your user name and speak now.')}
+          onChange={(e) => setUserData({ ...userData, username: e.target.value })}  // FIXED: Changed 'name' to 'username'
+          onMouseEnter={() => handleMouseHover('Enter your username.')}
+          className={styles.userFullNameInput}
         />
+
         <input
           type="tel"
+          required
           placeholder="Enter Your Phone Number"
           value={userData.phone}
-          onFocus={() => handleFieldFocus('phone')}
+          onFocus={() => handleFieldFocus('phone', 'Enter your phone number and speak now.')}
           onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
-          onMouseEnter={() => speakText('Enter your phone number')}
-          className={styles.userInput}
+          onMouseEnter={() => handleMouseHover('Enter your phone number.')}
+          className={styles.userPhoneInput}
         />
-        {errorMessage && <p className={styles.errorMessage} onMouseEnter={() => speakText(errorMessage)}>{errorMessage}</p>}
-        <button className={styles.submitButton} onClick={registerUser} onMouseEnter={() => speakText('Signup with Fingerprint')}>
-          Signup with Fingerprint
-        </button>
-        <Link to="/login">
-          <p className={styles.link} onMouseEnter={() => speakText('Already have an account? Login now!')}>
-            Already Have An Account? Login now!
-          </p>
+
+        {errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
+
+        <button
+  className={styles.submitButton}
+  onClick={registerUser}
+  onMouseEnter={() => handleMouseHover("Click to sign up with fingerprint")}
+  disabled={!userData.username || !userData.phone}
+>
+  Signup with Fingerprint
+</button>
+
+
+        <Link
+          to="/login"
+          onFocus={() => handleMouseHover('Navigate to login page.')}
+          onMouseEnter={() => handleMouseHover('Navigate to login page.')}
+          onMouseLeave={() => synthRef.current.cancel()}
+        >
+          <p className={styles.link}>Already Have An Account? Login now!</p>
         </Link>
       </div>
     </div>

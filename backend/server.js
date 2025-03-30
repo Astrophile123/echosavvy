@@ -24,7 +24,9 @@ const db = mysql.createConnection({
     host: "localhost",
     user: "root",
     password: "",
-    database: "ecommerce"
+    database: "ecommerce",
+    port: 3306,
+    connectTimeout:10000
 });
 
 
@@ -122,7 +124,7 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-app.post('/cart/add', async (req, res) => {
+app.post('/api/cart/add', async (req, res) => { 
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
@@ -131,14 +133,32 @@ app.post('/cart/add', async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
-        const { user_id, product_id, product_name, price, quantity, image_url } = req.body;
+        const user_id = decoded.id;  // ✅ Extract user_id from token
+        const { product_id, product_name, price, quantity, image_url } = req.body;
 
-        if (!user_id || !product_id || !product_name || !price || !quantity || !image_url) {
+        if (!product_id || !product_name || !price || !quantity || !image_url) {
             return res.status(400).json({ message: "All fields are required" });
         }
 
         const total_amount = price * quantity;
 
+        
+        const [existing] = await db.promise().query(
+            "SELECT quantity FROM cart WHERE user_id = ? AND product_id = ?",
+            [user_id, product_id]
+        );
+
+        if (existing.length > 0) {
+            // ✅ If exists, update quantity
+            const newQuantity = existing[0].quantity + quantity;
+            await db.promise().query(
+                "UPDATE cart SET quantity = ?, total_amount = price * ? WHERE user_id = ? AND product_id = ?",
+                [newQuantity, newQuantity, user_id, product_id]
+            );
+            return res.status(200).json({ message: "Cart updated successfully" });
+        }
+
+        // ✅ Insert if not in cart
         await db.promise().query(
             "INSERT INTO cart (user_id, product_id, product_name, price, quantity, image_url, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)",
             [user_id, product_id, product_name, price, quantity, image_url, total_amount]
@@ -151,7 +171,8 @@ app.post('/cart/add', async (req, res) => {
         res.status(500).json({ message: "Database error", error: error.message });
     }
 });
-app.get('/cart/:user_id', async (req, res) => {
+
+app.get('/api/cart', async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
@@ -160,20 +181,21 @@ app.get('/cart/:user_id', async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
-        const user_id = req.params.user_id;
+        const user_id = decoded.id;
 
         const [results] = await db.promise().query(
             "SELECT * FROM cart WHERE user_id = ?",
             [user_id]
         );
 
-        res.status(200).json(results);
+        res.status(200).json(results.length > 0 ? results : []);
     } catch (error) {
         console.error("Error fetching cart items:", error);
         res.status(500).json({ message: "Database error", error: error.message });
     }
 });
-app.delete('/cart/remove', async (req, res) => {
+
+app.delete('/api/cart/remove', async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
@@ -182,7 +204,8 @@ app.delete('/cart/remove', async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
-        const { user_id, product_id } = req.body;
+        const user_id = decoded.id;
+        const { product_id } = req.body;
 
         await db.promise().query(
             "DELETE FROM cart WHERE user_id = ? AND product_id = ?",
@@ -195,7 +218,9 @@ app.delete('/cart/remove', async (req, res) => {
         res.status(500).json({ message: "Database error", error: error.message });
     }
 });
-app.put('/cart/update', async (req, res) => {
+
+// ✅ Update Cart Item Quantity
+app.put('/api/cart/update', async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
@@ -204,9 +229,10 @@ app.put('/cart/update', async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
-        const { user_id, product_id, quantity } = req.body;
+        const user_id = decoded.id;
+        const { product_id, quantity } = req.body;
 
-        const [results] = await db.promise().query(
+        await db.promise().query(
             "UPDATE cart SET quantity = ?, total_amount = price * ? WHERE user_id = ? AND product_id = ?",
             [quantity, quantity, user_id, product_id]
         );
@@ -217,6 +243,7 @@ app.put('/cart/update', async (req, res) => {
         res.status(500).json({ message: "Database error", error: error.message });
     }
 });
+
 app.listen(8082, () => {
     console.log("🚀 Server is running on http://localhost:8082");
 });

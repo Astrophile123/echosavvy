@@ -6,8 +6,9 @@ import Login from './login/Login';
 import Products from './products/Products';
 import Signup from './signup/Signup';
 import Cart from './cart/Cart';
-import Checkout from './checkout/Checkout';
+import Checkout from './checkout/Checkout'; 
 import { CartProvider } from './cart/CartContext';
+import NotFound from './notFound/NotFound'; 
 
 const router = createBrowserRouter([
   {
@@ -29,10 +30,14 @@ const router = createBrowserRouter([
   {
     path: '/cart',
     element: <Cart />,
-  }, 
+  },
   {
-    path: '/checkout', 
-    element: <Checkout />,
+    path: '/checkout',
+    element: <Checkout />, 
+  },
+  {
+    path: '*',
+    element: <NotFound />, 
   },
 ]);
 
@@ -42,7 +47,6 @@ const Root = () => (
   </CartProvider>
 );
 
-// Render the Root component
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Root />

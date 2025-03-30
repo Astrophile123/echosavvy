@@ -115,4 +115,18 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// ✅ **Register Challenge Route (Fix for 404 Error)**
+router.post('/register-challenge', async (req, res) => {
+    try {
+        const challengeBuffer = crypto.randomBytes(32);
+        const challenge = base64ToBase64url(challengeBuffer.toString('base64'));
+
+        res.status(200).json({ success: true, challenge });
+    } catch (error) {
+        console.error('Error generating challenge:', error);
+        res.status(500).json({ success: false, message: 'Server error. Try again.' });
+    }
+});
+
+
 module.exports = router;

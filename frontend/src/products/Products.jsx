@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { TiShoppingCart , TiHome } from "react-icons/ti";
+import { TiShoppingCart} from "react-icons/ti";
 import { HiMicrophone } from "react-icons/hi2";
+import { RiLogoutBoxRLine } from "react-icons/ri";
+import { MdOutlineHome } from "react-icons/md";
 import styles from "./Products.module.css";
-import { useCart } from "../cart/CartContext";
+import axios from "axios";
 
 const products = [
   { id: 22, name: "Smartphone", category: "Mobile Phones", price: "$699.99", description: "Latest model with high-resolution camera and fast processor.", image: "/image/phone.png" },
@@ -30,27 +32,11 @@ const products = [
 const Products = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState(products);
+  const [isListening, setIsListening] = useState(false);
+  const [user_id, setUserId] = useState(localStorage.getItem("user_id"));
   const synthRef = useRef(window.speechSynthesis);
   const recognitionRef = useRef(null);
   const navigate = useNavigate();
-  const { addToCart } = useCart();
-  const user_id = localStorage.getItem("user_id");
-
-  const goToHome = () => {
-    speakText("Going to home page");
-    navigate("/");
-  };
-  
-  const handleSpeechResult = useCallback((event) => {
-    const transcript = event.results[0][0].transcript;
-    setSearchTerm(transcript);
-    handleSearch({ target: { value: transcript } });
-  }, []);
-
-
-  const handleSpeechError = useCallback(() => {
-    speakText("Sorry, I couldn't understand you. Please try again.");
-  }, []);
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -65,19 +51,38 @@ const Products = () => {
       console.warn("Speech recognition not supported.");
     }
 
-    const synth = synthRef.current;
-    synth.onvoiceschanged = () => synth.getVoices();
+    synthRef.current.onvoiceschanged = () => synthRef.current.getVoices();
 
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
-      if (synth) synth.cancel();
+      if (synthRef.current) synthRef.current.cancel();
     };
-  }, [handleSpeechResult, handleSpeechError]);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("guestCart");
+    navigate("/login");
+  };
+
+  const handleSpeechResult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    setSearchTerm(transcript);
+    handleSearch({ target: { value: transcript } });
+    setIsListening(false);
+  };
+
+  const handleSpeechError = () => {
+    setIsListening(false);
+    speakText("Sorry, I couldn't understand you. Please try again.");
+  };
 
   const startVoiceSearch = () => {
     if (recognitionRef.current) {
       synthRef.current.cancel();
       recognitionRef.current.start();
+      setIsListening(true);
       speakText("Listening...");
     }
   };
@@ -88,8 +93,7 @@ const Products = () => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-IN";
     utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.voice = synthRef.current.getVoices().find(voice => voice.name.includes("Google UK English Female")) || synthRef.current.getVoices()[0];
+    utterance.pitch = 1.2;
     synthRef.current.speak(utterance);
   };
 
@@ -103,51 +107,55 @@ const Products = () => {
     const value = e.target.value.toLowerCase();
     setSearchTerm(value);
     setFilteredProducts(value ? products.filter(p => p.name.toLowerCase().includes(value)) : products);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleAddToCart = async (product) => {
+    const userId = localStorage.getItem("user_id");
     const token = localStorage.getItem("token");
-
-    if (!token || !user_id) {
-      const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
-      const existingItem = guestCart.find((item) => item.product_id === product.id);
-
-      if (existingItem) {
-        existingItem.quantity += 1;
-      } else {
-        guestCart.push({
-          product_id: product.id,
-          product_name: product.name,
-          price: product.price,
-          quantity: 1,
-          image_url: product.image,
-        });
-      }
-
-      localStorage.setItem("guestCart", JSON.stringify(guestCart));
-      speakText("Added to cart successfully!");
-    } else {
-      try {
-        await addToCart({
-          user_id,
-          product_id: product.id,
-          product_name: product.name,
-          price: product.price,
-          quantity: 1,
-          image_url: product.image,
-        });
-        speakText("Added to cart successfully!");
-      } catch (error) {
-        console.error("❌ Error adding to cart:", error);
-        speakText("Failed to add to cart. Please try again.");
-      }
+  
+    if (!userId || !token) {
+      speakText("Please log in to add items to the cart.");
+      return;
     }
-
-    navigate("/cart");
+  
+ 
+    const cleanPrice = Number(String(product.price).replace(/[^0-9.-]+/g, ""));
+    
+    if (isNaN(cleanPrice)) {
+      alert(`Invalid price format: ${product.price}`);
+      return;
+    }
+  
+    try {
+      speakText(`Adding ${product.name} to cart...`);
+      const response = await axios.post(
+        "http://localhost:8082/api/cart/add",
+        {
+          user_id: userId,
+          product_id: product.id,
+          product_name: product.name,
+          price: cleanPrice,  // Use cleaned price
+          quantity: 1,
+          image_url: product.image
+        },
+        { 
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          } 
+        }
+      );
+  
+      if (response.status === 200) {
+        speakText(`${product.name} added successfully!`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      navigate("/cart");
+      }
+    } catch (error) {
+      console.error("Error:", error.response?.data || error.message);
+      speakText("Failed to add to cart. See console for details.");
+    }
   };
-
-
 
   return (
     <main className={styles.productDisplay}>
@@ -159,7 +167,7 @@ const Products = () => {
         <div className={styles.searchContainer}>
           <input
             type="text"
-            placeholder="Search products ..."
+            placeholder="Search products..."
             className={styles.searchBar}
             value={searchTerm}
             onChange={handleSearch}
@@ -167,6 +175,7 @@ const Products = () => {
             onMouseEnter={() => speakText("Search bar for products search")}
             onMouseLeave={stopSpeech}
           />
+
           <HiMicrophone
             className={styles.microphoneIcon}
             size={20}
@@ -179,19 +188,38 @@ const Products = () => {
           />
         </div>
 
-        <div className={styles.userActions}>
-          <Link to={user_id ? `/cart/${user_id}` : "/cart"} className={styles.cartButton}>
-            <TiShoppingCart size={24} /> Cart
-          </Link>
-          <button
-            className={styles.homeButton}
-            onClick={goToHome}
-            onMouseEnter={() => speakText("Click here to go to home page")}
+        <div className={styles.userControls}>
+          <Link 
+            to="/cart" 
+            className={styles.cartButton}
+            onMouseEnter={() => speakText("Cart button, click to view your cart")}
             onMouseLeave={stopSpeech}
           >
-            <TiHome size={24} /> Home
-          </button>
-        </div>
+            <TiShoppingCart size={24} /> Cart
+          </Link>
+          
+          {!user_id && (
+    <Link 
+      to="/" 
+      className={styles.homeButton}
+      onMouseEnter={() => speakText("Home button, click to return to homepage")}
+      onMouseLeave={stopSpeech}
+    >
+      <MdOutlineHome size={30} /> Home
+    </Link>
+  )}
+  
+  {user_id && (
+    <button 
+      className={styles.logoutButton} 
+      onClick={handleLogout}
+      onMouseEnter={() => speakText("Logout")}
+      onMouseLeave={stopSpeech}
+    >
+      <RiLogoutBoxRLine size={20} /> Logout
+    </button>
+  )}
+</div>
       </div>
 
       <div className={styles.productsDisp}>
@@ -207,7 +235,7 @@ const Products = () => {
                 <img src={product.image} alt={product.name} className={styles.productImage} />
                 <h3>{product.name}</h3>
                 <p className={styles.category}>Category: {product.category}</p>
-                <p className={styles.price}>{product.price}</p>
+                <p className={styles.price}>₹{product.price}</p>
                 <button
                   className={styles.addToCart}
                   onClick={() => handleAddToCart(product)}
@@ -219,7 +247,7 @@ const Products = () => {
               </div>
             ))
           ) : (
-            <p className={styles.noResults} aria-live="polite" onMouseEnter={() => speakText("Sorry, no products found.")}>
+            <p className={styles.noResults} aria-live="polite" onMouseEnter={() => speakText("Sorry,  no products found matching your search.")}>
               No products found.
             </p>
           )}

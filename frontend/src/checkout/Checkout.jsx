@@ -1,23 +1,176 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './Checkout.module.css';
 
 const Checkout = () => {
-  // Optional: Text-to-speech announcement
-  useEffect(() => {
-    const message = 'Redirecting to payment page. Please do not refresh the page or go back.';
-    const speech = new SpeechSynthesisUtterance(message);
-    window.speechSynthesis.speak(speech); // Announce the message
+  const [activePayment, setActivePayment] = useState(null);
+  const [step, setStep] = useState(1); // Step 1: Payment selection, Step 2: Confirmation
 
-    // Cleanup speech synthesis on component unmount
+  // Payment methods with accessibility features
+  const paymentMethods = [
+    {
+      id: 'voice-pin',
+      name: 'Voice Authentication',
+      description: 'Confirm payment using your voice PIN',
+      icon: '🗣️',
+      instructions: 'After selecting, you will be prompted to say your 6-digit voice PIN'
+    },
+    {
+      id: 'otp-call',
+      name: 'OTP via Phone Call',
+      description: 'Receive OTP through an automated phone call',
+      icon: '📞',
+      instructions: 'We will call your registered number with the verification code'
+    },
+    {
+      id: 'tactile-card',
+      name: 'Tactile Card Reader',
+      description: 'For users with tactile payment cards',
+      icon: '🖐️',
+      instructions: 'Insert your card into the accessible reader when prompted'
+    }
+  ];
+
+  // Screen reader announcements
+  const announce = (message, priority = 'polite') => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // Stop any ongoing speech before announcing
+      const speech = new SpeechSynthesisUtterance(message);
+      speech.rate = 0.9;
+      window.speechSynthesis.speak(speech);
+    }
+
+    // Update the live region for screen readers
+    const liveRegion = document.getElementById('a11y-live-region');
+    if (liveRegion) {
+      liveRegion.setAttribute('aria-live', priority);
+      liveRegion.innerText = message;
+
+      // Clear after 2 seconds to allow re-announcement if needed
+      setTimeout(() => {
+        liveRegion.innerText = '';
+      }, 2000);
+    }
+  };
+
+  useEffect(() => {
+    announce('Checkout page loaded. Please select your preferred payment method.');
+
     return () => {
       window.speechSynthesis.cancel();
     };
   }, []);
 
+  const handlePaymentSelect = (method) => {
+    setActivePayment(method);
+    announce(`Selected ${method.name}. ${method.instructions}. Press the confirm button to proceed.`);
+  };
+
+  const handleConfirm = () => {
+    if (!activePayment) {
+      announce('Please select a payment method first.', 'assertive');
+      return;
+    }
+    setStep(2);
+    announce(`You have selected ${activePayment.name}. Preparing your payment. Please wait.`);
+
+    // Simulate payment processing
+    setTimeout(() => {
+      announce(`Payment with ${activePayment.name} is being processed. You will receive confirmation shortly.`);
+    }, 3000);
+  };
+
   return (
     <div className={styles.checkoutContainer}>
-      <h1 className={styles.redirectMessage}>Redirecting to Payment Page...</h1>
-      <p className={styles.warningMessage}>Please do not refresh the page or go back.</p>
+      {/* Hidden live region for screen reader announcements */}
+      <div id="a11y-live-region" aria-live="polite" className={styles.hidden}></div>
+
+      <h1 className={styles.pageTitle} aria-label="Checkout">Checkout</h1>
+
+      {step === 1 ? (
+        <>
+          <div className={styles.paymentMethods}>
+            <h2 className={styles.sectionTitle}>Select Payment Method</h2>
+            {paymentMethods.map(method => (
+              <div 
+                key={method.id}
+                className={`${styles.paymentCard} ${activePayment?.id === method.id ? styles.active : ''}`}
+                onClick={() => handlePaymentSelect(method)}
+                onKeyDown={(e) => e.key === 'Enter' && handlePaymentSelect(method)}
+                tabIndex="0"
+                aria-label={`${method.name}. ${method.description}`}
+                role="button"
+              >
+                <span className={styles.paymentIcon} aria-hidden="true">{method.icon}</span>
+                <div className={styles.paymentDetails}>
+                  <h3>{method.name}</h3>
+                  <p>{method.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button 
+            className={styles.confirmButton}
+            onClick={handleConfirm}
+            aria-label="Confirm payment method"
+          >
+            Confirm Payment Method
+          </button>
+        </>
+      ) : (
+        <div className={styles.confirmationScreen}>
+          <div className={styles.progressIndicator} aria-hidden="true">
+            <div className={styles.progressBar}></div>
+          </div>
+          
+          <h2 className={styles.sectionTitle}>Processing Your Payment</h2>
+          {activePayment && (
+            <p className={styles.paymentMethodInfo}>
+              Using: {activePayment.name} ({activePayment.description})
+            </p>
+          )}
+
+          {activePayment && (
+            <div className={styles.instructions}>
+              <h3>Next Steps:</h3>
+              <p>{activePayment.instructions}</p>
+            </div>
+          )}
+
+          <div className={styles.tactileFeedback} aria-hidden="true">
+            <div className={styles.vibrationPattern}></div>
+            <div className={styles.vibrationPattern}></div>
+            <div className={styles.vibrationPattern}></div>
+          </div>
+
+          <button 
+            className={styles.cancelButton}
+            onClick={() => setStep(1)}
+            aria-label="Go back to payment selection"
+          >
+            Change Payment Method
+          </button>
+        </div>
+      )}
+
+      <div className={styles.accessibilityFeatures}>
+        <button 
+          className={styles.accessibilityButton}
+          onClick={() => announce('Current status: ' + (step === 1 ? 
+            'Select payment method. Options available: ' + paymentMethods.map(m => m.name).join(', ') : 
+            `Processing with ${activePayment?.name}. ${activePayment?.instructions}`))}
+          aria-label="Repeat current status"
+        >
+          Repeat Instructions
+        </button>
+        <button 
+          className={styles.accessibilityButton}
+          onClick={() => window.speechSynthesis.cancel()}
+          aria-label="Stop speech"
+        >
+          Stop Speech
+        </button>
+      </div>
     </div>
   );
 };
