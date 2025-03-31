@@ -1,259 +1,101 @@
 @import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap');
 
-/* Base Styles */
 body {
   margin: 0;
-  font-family: 'Josefin Sans', sans-serif;
-  background-color: #f8f8f8;
+  font-family: 'Josefin Sans', serif;
+  background-color: #fff;
   color: #333;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  padding: 20px;
+  height: 100vh;
   box-sizing: border-box;
 }
 
 .mainContainer {
   width: 100%;
   max-width: 400px;
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
-  padding: 30px;
+  background-color: #fefefe;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
   text-align: center;
-  transition: transform 0.3s ease;
-}
-
-.mainContainer:hover {
-  transform: translateY(-3px);
 }
 
 .pageHeading {
   font-size: 2.5rem;
   color: #f39c12;
-  font-weight: 700;
-  margin-bottom: 25px;
-  letter-spacing: 0.5px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-decoration: none;
 }
 
 .formContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
 }
 
 .formContainer h2 {
-  font-size: 1.8rem;
-  margin-bottom: 5px;
-  color: #2c3e50;
-  font-weight: 600;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: #f39c12;
 }
 
-/* Input Field (only username now) */
-.userInput {
+input {
   width: 100%;
-  padding: 14px 16px;
-  margin: 8px 0;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 5px;
   font-size: 1rem;
-  font-family: 'Josefin Sans', sans-serif;
-  transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
-.userInput:focus {
+input:focus {
   outline: none;
   border-color: #f39c12;
-  box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.2);
+  box-shadow: 0 0 5px rgba(243, 156, 18, 0.5);
 }
 
-/* Biometric Button */
-.biometricButton {
+.submitButton {
   width: 100%;
   background-color: #f39c12;
-  color: white;
+  color: #fff;
   border: none;
-  border-radius: 8px;
-  padding: 16px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 1rem;
+  font-weight: bold;
   cursor: pointer;
-  margin-top: 15px;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  position: relative;
-  overflow: hidden;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
 }
 
-.biometricButton:hover {
-  background-color: #219653;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(33, 150, 83, 0.3);
+.submitButton:hover {
+  background-color: #f35c1b;
 }
 
-.biometricButton:active {
-  transform: translateY(0);
-}
-
-.biometricButton:disabled {
-  background-color: #95a5a6;
+.submitButton:disabled {
+  background-color: #e5e5e5;
+  color: #aaa;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
-.biometricButton::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: 0.5s;
-}
-
-.biometricButton:hover::before {
-  left: 100%;
-}
-
-/* Biometric Icon (using pseudo-element) */
-.biometricButton::after {
-  content: "🔒";
-  font-size: 1.2rem;
-}
-
-/* Status Messages */
 .errorMessage {
-  color: #e74c3c;
-  font-size: 0.95rem;
-  padding: 10px;
-  background-color: rgba(231, 76, 60, 0.1);
-  border-radius: 6px;
-  border-left: 3px solid #e74c3c;
-  margin: 10px 0;
-  width: 100%;
-  text-align: left;
+  color: red;
+  font-size: 0.9rem;
+  margin: 5px 0;
 }
 
-.successMessage {
-  color: #27ae60;
-  font-size: 0.95rem;
-  padding: 10px;
-  background-color: rgba(39, 174, 96, 0.1);
-  border-radius: 6px;
-  border-left: 3px solid#f39c12;
-  margin: 10px 0;
-  width: 100%;
-  text-align: left;
-}
-
-/* Links */
 .link {
   color: #f39c12;
-  font-size: 0.95rem;
-  margin-top: 15px;
+  font-size: 0.9rem;
+  margin-top: 10px;
   text-decoration: none;
-  transition: all 0.3s ease;
-  font-weight: 500;
-  display: inline-block;
+  transition: color 0.3s ease;
 }
 
 .link:hover {
-  color: #f39c12;
-  text-decoration: underline;
-  transform: translateX(3px);
-}
-
-.loadingSpinner {
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top: 3px solid #fff;
-  width: 20px;
-  height: 20px;
-  animation: spin 1s linear infinite;
-  display: inline-block;
-  margin-right: 8px;
-  vertical-align: middle;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes fingerprint-pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.1); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.fingerprint-active {
-  animation: fingerprint-pulse 1.5s infinite;
-}
-
-/* Responsive Design */
-@media (max-width: 480px) {
-  .mainContainer {
-    padding: 25px;
-    border-radius: 10px;
-  }
-  
-  .pageHeading {
-    font-size: 2rem;
-  }
-  
-  .formContainer h2 {
-    font-size: 1.5rem;
-  }
-  
-  .userInput, .biometricButton {
-    padding: 14px;
-  }
-}
-
-
-button:focus, input:focus, a:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 158, 12, 0.762);
-}
-
-.listening-indicator {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: #f39c12;
-  color: white;
-  padding: 8px 15px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 1000;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.9; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.listening-dot {
-  width: 10px;
-  height: 10px;
-  background-color: white;
-  border-radius: 50%;
-  animation: blink 1.5s infinite;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  color: #f45612;
 }
