@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useCart } from "./CartContext";
 import { useNavigate } from "react-router-dom";
 import styles from "./Cart.module.css";
@@ -11,7 +11,7 @@ const Cart = () => {
     fetchCartItems, 
     removeItem, 
     updateQuantity,
-    setCartItems // Make sure this is provided by your CartContext
+    setCartItems
   } = useCart();
   
   const navigate = useNavigate();
@@ -19,6 +19,11 @@ const Cart = () => {
   const [voices, setVoices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Refs for keyboard navigation
+  const continueShoppingRef = useRef(null);
+  const checkoutButtonRef = useRef(null);
+  const itemRefs = useRef([]);
 
   // Fetch cart items on component mount
   useEffect(() => {
@@ -109,6 +114,34 @@ const Cart = () => {
     stopSpeech();
   };
 
+  // Handle keyboard navigation
+  const handleKeyDown = (e, item, index) => {
+    switch (e.key) {
+      case "Enter":
+        // Focus first interactive element in the item
+        if (itemRefs.current[index]?.querySelector("button")) {
+          itemRefs.current[index].querySelector("button").focus();
+        }
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        if (index < cartItems.length - 1) {
+          itemRefs.current[index + 1]?.focus();
+        } else {
+          checkoutButtonRef.current?.focus();
+        }
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (index > 0) {
+          itemRefs.current[index - 1]?.focus();
+        } else {
+          continueShoppingRef.current?.focus();
+        }
+        break;
+    }
+  };
+
   // Handle quantity updates
   const handleUpdateQuantity = async (product_id, change) => {
     try {
@@ -118,12 +151,11 @@ const Cart = () => {
         return;
       }
 
-      // Find the current item to get existing quantity
       const currentItem = cartItems.find(item => item.product_id === product_id);
       if (!currentItem) return;
 
       const newQuantity = currentItem.quantity + change;
-      if (newQuantity < 1) return; // Don't allow quantities below 1
+      if (newQuantity < 1) return;
 
       await axios.put(
         "http://localhost:8082/api/cart/update",
@@ -131,7 +163,6 @@ const Cart = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Update local state
       updateQuantity(product_id, change);
     } catch (err) {
       console.error("Error updating quantity:", err);
@@ -150,10 +181,9 @@ const Cart = () => {
 
       await axios.delete("http://localhost:8082/api/cart/remove", {
         headers: { Authorization: `Bearer ${token}` },
-        data: { product_id } // Axios DELETE with body needs this format
+        data: { product_id } 
       });
 
-      
       removeItem(product_id);
     } catch (err) {
       console.error("Error removing item:", err);
@@ -174,6 +204,8 @@ const Cart = () => {
       <h1 
         className={styles.heading} 
         onMouseEnter={() => handleMouseEnter("EchoSavvy Cart")}
+        tabIndex="0"
+        onFocus={() => speakText("EchoSavvy Cart", voices)}
       >
         EchoSavvy Cart
       </h1>
@@ -182,14 +214,19 @@ const Cart = () => {
         <h2 
           className={styles.heading1} 
           onMouseEnter={() => handleMouseEnter("Your cart.")}
+          tabIndex="0"
+          onFocus={() => speakText("Your cart", voices)}
         >
           🛒 Your Cart
         </h2>
         <button 
+          ref={continueShoppingRef}
           className={styles.continueShopping} 
           onClick={() => navigate("/products")} 
           onMouseEnter={() => handleMouseEnter("Continue shopping.")} 
           onMouseLeave={handleMouseLeave}
+          onFocus={() => speakText("Continue shopping button", voices)}
+          tabIndex="0"
         >
           Continue Shopping
         </button>
@@ -199,19 +236,28 @@ const Cart = () => {
         <p 
           className={styles.noResults} 
           onMouseEnter={() => handleMouseEnter("Your cart is empty.")}
+          tabIndex="0"
+          onFocus={() => speakText("Your cart is empty", voices)}
         >
           Your cart is empty.
         </p>
       ) : (
         <div className={styles.cartItems}>
-          {cartItems.map((item) => (
+          {cartItems.map((item, index) => (
             <div 
               key={item.product_id} 
               className={styles.cartItem}
+              ref={el => itemRefs.current[index] = el}
+              tabIndex="0"
+              onKeyDown={(e) => handleKeyDown(e, item, index)}
               onMouseEnter={() => handleMouseEnter(
                 `Product: ${item.product_name}, Quantity: ${item.quantity}, Price: ${item.price} dollars.`
               )} 
               onMouseLeave={handleMouseLeave}
+              onFocus={() => speakText(
+                `Product: ${item.product_name}, Quantity: ${item.quantity}, Price: ${item.price} dollars.`,
+                voices
+              )}
             >
               <div className={styles.cartImageName}>
                 <img 
@@ -219,8 +265,9 @@ const Cart = () => {
                   alt={item.product_name} 
                   className={styles.cartImage} 
                   onError={(e) => (e.target.src = "/default-product.png")} 
+                  tabIndex="-1"
                 />
-                <p className={styles.cartProductName}>{item.product_name}</p>
+                <p className={styles.cartProductName} tabIndex="-1">{item.product_name}</p>
               </div>
               
               <div className={styles.cartAmountToggle}>
@@ -228,27 +275,33 @@ const Cart = () => {
                   onClick={() => handleUpdateQuantity(item.product_id, -1)}
                   onMouseEnter={() => handleMouseEnter("Decrease quantity by one.")} 
                   onMouseLeave={handleMouseLeave}
+                  onFocus={() => speakText("Decrease quantity button", voices)}
                   disabled={item.quantity <= 1}
+                  tabIndex="-1"
                 >
                   -
                 </button>
-                <span>{item.quantity}</span>
+                <span tabIndex="-1">{item.quantity}</span>
                 <button 
                   onClick={() => handleUpdateQuantity(item.product_id, 1)}
                   onMouseEnter={() => handleMouseEnter("Increase quantity by one.")} 
                   onMouseLeave={handleMouseLeave}
+                  onFocus={() => speakText("Increase quantity button", voices)}
+                  tabIndex="-1"
                 >
                   +
                 </button>
               </div>
               
-              <p className={styles.cartPrice}>${item.price}</p>
+              <p className={styles.cartPrice} tabIndex="-1">${item.price}</p>
               
               <button 
                 className={styles.removeButton} 
                 onClick={() => handleRemoveItem(item.product_id)}
                 onMouseEnter={() => handleMouseEnter(`Remove ${item.product_name} from cart.`)} 
                 onMouseLeave={handleMouseLeave}
+                onFocus={() => speakText(`Remove ${item.product_name} button`, voices)}
+                tabIndex="-1"
               >
                 🗑 Remove
               </button>
@@ -259,15 +312,20 @@ const Cart = () => {
             <h3 
               onMouseEnter={() => handleMouseEnter(`Total amount in cart is ${calculateTotal} dollars.`)} 
               onMouseLeave={handleMouseLeave}
+              tabIndex="0"
+              onFocus={() => speakText(`Total amount: ${calculateTotal} dollars`, voices)}
             >
               Total: ${calculateTotal}
             </h3>
             <button 
+              ref={checkoutButtonRef}
               className={styles.checkoutButton} 
               onClick={() => navigate("/checkout")} 
               onMouseEnter={() => handleMouseEnter("Proceed to checkout.")} 
               onMouseLeave={handleMouseLeave}
+              onFocus={() => speakText("Proceed to checkout button", voices)}
               disabled={cartItems.length === 0}
+              tabIndex="0"
             >
               Proceed to Checkout
             </button>

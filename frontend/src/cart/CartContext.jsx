@@ -128,7 +128,8 @@ export const CartProvider = ({ children }) => {
   };
 
   // Update item quantity
-  const updateQuantity = async (product_id, change) => {
+  const updateQuantity = async (product_id, newQuantity) => {
+    if (newQuantity < 1) return;
     const { user_id, token } = getAuthInfo();
     setLoading(true);
     setError(null);
@@ -139,7 +140,6 @@ export const CartProvider = ({ children }) => {
         const currentItem = cartItems.find(item => item.product_id === product_id);
         if (!currentItem) return;
 
-        const newQuantity = currentItem.quantity + change;
         if (newQuantity < 1) {
           await removeItem(product_id);
           return;
@@ -151,13 +151,19 @@ export const CartProvider = ({ children }) => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        await fetchCartItems();
+        setCartItems(prevItems =>
+          prevItems.map(item =>
+            item.product_id === product_id
+              ? { ...item, quantity: newQuantity }
+              : item
+          )
+        );
       } else {
         const guestCart = [...cartItems];
         const item = guestCart.find(item => item.product_id === product_id);
 
         if (item) {
-          item.quantity += change;
+          item.quantity = newQuantity;
           if (item.quantity < 1) {
             // Remove if quantity drops to 0
             await removeItem(product_id);

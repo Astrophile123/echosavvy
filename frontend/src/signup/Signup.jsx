@@ -10,7 +10,6 @@ const Signup = () => {
   const recognitionRef = useRef(null);
   const navigate = useNavigate();
   const synthRef = useRef(window.speechSynthesis);
-  const inputTimeout = useRef(null);
 
 
   useEffect(() => {
@@ -72,11 +71,6 @@ const Signup = () => {
     }
   };
   
-
-  const confirmDetails = () => {
-    speakText(`You entered username: ${userData.username} and phone number: ${userData.phone}.`);
-  };
-  
   const handleFieldFocus = (field, message) => {
     setCurrentField(field);
 
@@ -136,42 +130,56 @@ const Signup = () => {
         }
       };
 
-  const registerUser = async () => {
-    const fingerprintData = await registerFingerprint();
-    console.log("📤 Initiating fingerprint-based signup...");
-    if (!fingerprintData) {
-      setErrorMessage('Fingerprint registration failed. Please try again.');
-      speakText('Fingerprint registration failed. Please try again.');
-      return;
-    }
+      const registerUser = async () => {
+        console.log("📤 Initiating fingerprint-based signup...");
     
-    if (!userData.username.trim() || !userData.phone.trim()) {
-      setErrorMessage("Username and phone number are required.");
-      speakText("Username and phone number are required.");
-      return;
-    }
-  
-    try {
-      const response = await axios.post('http://localhost:8082/api/signup', {
-        ...userData,
-        credential_id: fingerprintData.credential_id,
-        public_key: fingerprintData.public_key,
-      });
-
-      if (response.status === 200) {
-        speakText('Signup successful. Redirecting to products page.');
-        navigate('/products');
-      } else {
-        throw new Error('Signup failed');
-      }
-    } catch (error) {
-      console.error(error.response?.data || error.message);
-      setErrorMessage('Signup failed. Please check your connection and try again.');
-      speakText('Signup failed. Please check your connection and try again.');
-    }
-  };
-
-
+        // Step 1: Register Fingerprint
+        const fingerprintData = await registerFingerprint();
+        if (!fingerprintData) {
+            const errorMsg = "Fingerprint registration failed. Please try again.";
+            console.error("❌", errorMsg);
+            setErrorMessage(errorMsg);
+            speakText(errorMsg);
+            return;
+        }
+    
+        // Step 2: Validate User Input
+        const trimmedUsername = userData.username.trim();
+        const trimmedPhone = userData.phone.replace(/\s+/g, '');
+    
+        if (!trimmedUsername || !trimmedPhone) {
+            const errorMsg = "Username and phone number are required.";
+            console.error("⚠️", errorMsg);
+            setErrorMessage(errorMsg);
+            speakText(errorMsg);
+            return;
+        }
+    
+        // Step 3: Send Signup Request
+        try {
+            const response = await axios.post('http://localhost:8082/api/signup', {
+                username: trimmedUsername,
+                phone: trimmedPhone,
+                credential_id: fingerprintData.credential_id,
+                public_key: fingerprintData.public_key,
+            });
+    
+            if (response.status === 200) {
+                console.log("✅ Signup successful:", response.data);
+                speakText("Signup successful. Redirecting to products page...");
+                setTimeout(() => navigate('/products'), 1500);
+            } else {
+                throw new Error(response.data.message || "Signup failed.");
+            }
+    
+        } catch (error) {
+            console.error("❌ Signup error:", error.response?.data || error.message);
+            const errorMsg = error.response?.data?.message || "Signup failed. Please check your connection and try again.";
+            setErrorMessage(errorMsg);
+            speakText(errorMsg);
+        }
+    };
+    
   return (
     <div className={styles.mainContainer}>
       <h1 

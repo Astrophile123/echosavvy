@@ -9,6 +9,7 @@ import Cart from './cart/Cart';
 import Checkout from './checkout/Checkout'; 
 import { CartProvider } from './cart/CartContext';
 import NotFound from './notFound/NotFound'; 
+import EmptyCart from './cart/EmptyCart';
 
 const router = createBrowserRouter([
   {
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
     path: '*',
     element: <NotFound />, 
   },
+  {
+   path:"/empty-cart",
+    element:<EmptyCart />,
+  }
 ]);
 
 const Root = () => (

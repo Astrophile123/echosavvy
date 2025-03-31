@@ -92,13 +92,15 @@ router.post("/moveGuestCart", (req, res) => {
                     if (results.length > 0) {
                         // If product exists, update quantity and total amount
                         db.query(
-                            `UPDATE cart SET quantity = quantity + ?, total_amount = price * (quantity + ?) WHERE user_id = ? AND product_id = ?`,
+                            `UPDATE cart SET quantity = ?, total_amount = price * ? WHERE user_id = ? AND product_id = ?`,
                             [quantity, quantity, user_id, product_id],
                             (updateErr) => {
-                                if (updateErr) return reject(updateErr);
-                                resolve();
+                              if (updateErr) return reject(updateErr);
+                              resolve();
                             }
-                        );
+                          );
+                          
+                          
                     } else {
                         // If product does not exist, insert into cart
                         db.query(

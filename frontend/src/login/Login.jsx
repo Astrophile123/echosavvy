@@ -38,44 +38,6 @@ const Login = () => {
     synthRef.current.speak(utterance);
   };
 
-  const handleFieldFocus = async (field) => {
-    if (recognitionRunning) {
-      console.log("Recognition already running. Stopping first...");
-      recognitionRef.current.stop(); 
-      setRecognitionRunning(false);
-      await new Promise(resolve => setTimeout(resolve, 500)); 
-    }
-  
-    console.log(`Starting recognition for ${field}`);
-    speakText(`Please say your ${field}`);
-    setCurrentField(field);
-  
-    setTimeout(() => {
-      if (recognitionRef.current && !recognitionRunning) {
-        recognitionRef.current.onresult = (event) => {
-          const transcript = event.results[0][0].transcript.trim();
-          console.log(`Recognized speech: ${transcript}`);
-  
-          setUserData((prev) => ({
-            ...prev,
-            [field]: transcript, 
-          }));
-  
-          speakText(`You entered: ${transcript}`);
-          setRecognitionRunning(false);
-        };
-  
-        recognitionRef.current.start();
-        setRecognitionRunning(true);
-      }
-    }, 500);
-  };
-  
-  
-  const handleMouseHover = (message) => {
-    speakText(message);
-  };
-
   useEffect(() => {
     if (!('webkitSpeechRecognition' in window)) {
       console.error('Speech Recognition not supported.');
@@ -87,7 +49,7 @@ const Login = () => {
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = 'en-IN';
+    recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript.trim();
@@ -116,98 +78,151 @@ const Login = () => {
     recognitionRef.current = recognition;
   }, []);
 
-  const confirmDetails = () => {
-    speakText(`You entered username: ${userData.username}. Please proceed with fingerprint authentication.`);
+  const handleFieldFocus = async (field) => {
+    if (recognitionRunning) {
+        recognitionRef.current.stop();
+        setRecognitionRunning(false);
+        await new Promise(resolve => setTimeout(resolve, 500)); 
+    }
+
+    setCurrentField(field);
+    speakText(`Please say your ${field}`);
+
+    recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.trim();
+        console.log(`Recognized speech: ${transcript}`);
+
+        setUserData((prev) => ({
+            ...prev,
+            [field]: transcript, 
+        }));
+
+        speakText(`You entered: ${transcript}`);
+        setRecognitionRunning(false);
+    };
+
+    recognitionRef.current.start();
+    setRecognitionRunning(true);
+};
+  
+  const handleMouseHover = (message) => {
+    speakText(message);
   };
+
   
   const authenticateWithFingerprint = async () => {
     try {
-      setLoading(true);
-      setErrorMessage('');
-      speakText("Fetching authentication challenge. Please wait.");
-      const challengeResponse = await axios.post('http://localhost:8082/api/get-challenge', { username: userData.username });
-      if (!challengeResponse.data.success) throw new Error(challengeResponse.data.message || "Failed to get challenge.");
-  
-      const { challenge, credential_id } = challengeResponse.data;
-      if (!challenge || !credential_id) throw new Error("Invalid challenge response from server.");
-  
-      speakText("Place your finger on the scanner to log in.");
-      const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge: base64urlToUint8Array(challenge),
-          allowCredentials: [{ id: base64urlToUint8Array(credential_id), type: "public-key" }],
-          userVerification: "required",
-          timeout: 60000,
-        },
-      });
-  
-      if (!credential) throw new Error("Fingerprint authentication failed.");
-  
-      const response = await axios.post('http://localhost:8082/api/login', {
-        username: userData.username,
-        credential_id: uint8ArrayToBase64(credential.rawId),
-        authenticatorData: uint8ArrayToBase64(credential.response.authenticatorData),
-        clientDataJSON: uint8ArrayToBase64(credential.response.clientDataJSON),
-        signature: uint8ArrayToBase64(credential.response.signature),
-      });
-  
-      if (response.data.success) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        speakText("Login successful. Redirecting to the products page.");
-        navigate('/products');
-      } else {
-        throw new Error(response.data.message || "Login failed. Please try again.");
-      }
+        setLoading(true);
+        setErrorMessage('');
+        speakText("Fetching authentication challenge. Please wait.");
+
+        // Step 1: Request authentication challenge from backend
+        const challengeResponse = await axios.post('http://localhost:8082/api/get-challenge', {
+            username: userData.username
+        });
+
+        if (!challengeResponse.data.success) throw new Error(challengeResponse.data.message || "Failed to get challenge.");
+
+        const { challenge, credential_id } = challengeResponse.data;
+        if (!challenge || !credential_id) throw new Error("Invalid challenge response from server.");
+
+        speakText("Place your finger on the scanner to log in.");
+
+        // Step 2: Perform fingerprint authentication using WebAuthn
+        const credential = await navigator.credentials.get({
+            publicKey: {
+                challenge: base64urlToUint8Array(challenge),
+                allowCredentials: [{ id: base64urlToUint8Array(credential_id), type: "public-key" }],
+                userVerification: "required",
+                timeout: 60000
+            }
+        });
+
+        if (!credential) throw new Error("Fingerprint authentication failed.");
+
+        // Step 3: Send the authentication data to the backend for verification
+        const response = await axios.post('http://localhost:8082/api/login', {
+            username: userData.username,
+            credential_id: uint8ArrayToBase64(credential.rawId),
+            authenticatorData: uint8ArrayToBase64(credential.response.authenticatorData),
+            clientDataJSON: uint8ArrayToBase64(credential.response.clientDataJSON),
+            signature: uint8ArrayToBase64(credential.response.signature),
+        });
+
+        if (response.data.success && response.data.token) {
+            // Step 4: Store authentication token and user details in localStorage
+            localStorage.setItem("token", response.data.token);
+            localStorage.setItem("user_id", response.data.user_id || "");
+            localStorage.setItem("user", userData.username);
+
+            speakText(`Welcome ${userData.username}. Redirecting to products page.`);
+            
+            // Step 5: Redirect to the products page
+            setTimeout(() => {
+                navigate("/products");
+            }, 2500);
+        } else {
+            throw new Error(response.data.message || "Login failed. Please try again.");
+        }
     } catch (error) {
-      setErrorMessage(error.message);
-      speakText(error.message);
+        setErrorMessage(error.message);
+        speakText(error.message);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
+
   
-  
-  return (
-    <div className={styles.mainContainer}>
-      <h1 className={styles.pageHeading} onMouseEnter={() => handleMouseHover("Welcome to EchoSavvy login page")}>Echosavvy</h1>
+return (
+  <div className={styles.mainContainer}>
+    <h1 className={styles.pageHeading} onMouseEnter={() => handleMouseHover("Welcome to EchoSavvy login page")}>Echosavvy</h1>
+    
+    <div className={styles.formContainer}>
+      <h2 onMouseEnter={() => handleMouseHover("Login")}>Login</h2>
       
-      <div className={styles.formContainer}>
-        <h2 onMouseEnter={() => handleMouseHover("Login")}>Login</h2>
-        
-        <input
-          type="text"
-          required
-          placeholder="Enter Your Username"
-          value={userData.username}
-          onFocus={() => handleFieldFocus('username')}
-          onChange={(e) => setUserData({ ...userData, username: e.target.value })}
-          onMouseEnter={() => handleMouseHover("Enter your username")}
-          className={styles.userPhoneInput}
-        />
+      <input
+        type="text"
+        required
+        placeholder="Enter Your Username"
+        value={userData.username}
+        onFocus={() => handleFieldFocus('username')}
+        onChange={(e) => setUserData({ ...userData, username: e.target.value })}
+        onMouseEnter={() => handleMouseHover("Enter your username")}
+        className={styles.userPhoneInput}
+      />
 
-        {errorMessage && <p className={styles.errorMessage} onMouseEnter={() => handleMouseHover(errorMessage)}>{errorMessage}</p>}
 
-        <button
+      {errorMessage && <p className={styles.errorMessage} onMouseEnter={() => handleMouseHover(errorMessage)}>{errorMessage}</p>}
+
+      <button
   className={styles.submitButton}
-  onClick={authenticateWithFingerprint}
-  onMouseEnter={() => handleMouseHover("Click to login with fingerprint")}
+  onClick={authenticateWithFingerprint} // Call fingerprint login function
+  onFocus={() => handleMouseHover('Press this button to log in')}
+  onMouseEnter={() => handleMouseHover("Click to login")}
   disabled={loading || !userData.username}
 >
-  {loading ? 'Authenticating...' : 'Login with Fingerprint'}
+  {loading ? 'Logging in...' : 'Login'}
 </button>
 
 
 
-        <Link
-          to="/signup"
-          onFocus={() => handleMouseHover('Go to Signup Page')}
-          onMouseEnter={() => handleMouseHover("Click here to sign up")}
-        >
-          <p className={styles.link}>Don't Have An Account? Signup now!</p>
-        </Link>
-      </div>
+      <Link
+        to="/signup"
+        onFocus={() => handleMouseHover('Go to Signup Page')}
+        onMouseEnter={() => handleMouseHover("Click here to sign up")}
+      >
+        <p className={styles.link}>Don't Have An Account? Signup now!</p>
+      </Link>
+      <Link
+        to="/"
+        onFocus={() => handleMouseHover('home page')}
+        onMouseEnter={() => handleMouseHover("Click here to go to home")}
+      >
+        <p className={styles.link}>Go to Home</p>
+      </Link>
     </div>
-  );
+  </div>
+);
 };
 
 export default Login;

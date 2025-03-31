@@ -19,7 +19,7 @@ const CartItems = () => {
       ) : (
         cartItems.map((item) => (
           <div
-            key={item.id}
+            key={item.product_id}
             className={styles.cartItem}
             onMouseEnter={() => handleMouseEnter(item.product_name)}
           >
@@ -32,18 +32,18 @@ const CartItems = () => {
               <p className={styles.cartProductName}>{item.product_name}</p>
             </div>
             <div className={styles.cartAmountToggle}>
-              <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+              <button onClick={() => item.quantity>1 && updateQuantity(item.product_id, item.quantity - 1)}>
                 -
               </button>
               <span>{item.quantity}</span>
-              <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+              <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)}>
                 +
               </button>
             </div>
             <p className={styles.cartPrice}>${(item.price * item.quantity).toFixed(2)}</p>
             <button
               className={styles.removeButton}
-              onClick={() => removeFromCart(item.id)}
+              onClick={() => removeFromCart(item.product_id)}
             >
               Remove
             </button>

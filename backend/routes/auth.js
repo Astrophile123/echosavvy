@@ -4,6 +4,9 @@ const db = require('../db');
 const crypto = require('crypto');
 const { Fido2Lib } = require("fido2-lib");
 
+const JWT_SECRET = 'echosavvy';
+
+
 const fido2 = new Fido2Lib({
     timeout: 60000,
     rpId: "localhost",
@@ -89,6 +92,8 @@ router.post('/signup', async (req, res) => {
 });
 
 // ✅ **Login Route - Authenticate User with WebAuthn**
+const jwt = require('jsonwebtoken');
+
 router.post('/login', async (req, res) => {
     try {
         const { username, credential_id } = req.body;
@@ -97,7 +102,7 @@ router.post('/login', async (req, res) => {
         }
 
         const [user] = await db.promise().query(
-            'SELECT public_key FROM users WHERE username = ? AND credential_id = ?',
+            'SELECT id, public_key FROM users WHERE username = ? AND credential_id = ?',
             [username, credential_id]
         );
 
@@ -105,10 +110,21 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'User not found or credential mismatch' });
         }
 
-        // **Fix: Do not convert again; it's already Base64**
-        const publicKey = user[0].public_key;  
+        // Generate JWT token
+        const token = jwt.sign(
+            { user_id: user[0].id, username: user[0].username },
+             JWT_SECRET,
+              { expiresIn: "3d" }
+            );
 
-        res.status(200).json({ success: true, publicKey });
+        // Store token in the database
+        await db.promise().query(
+            'UPDATE users SET token = ? WHERE username = ?',
+            [token, username]
+        );
+
+        res.status(200).json({ success: true, token, user_id: user[0].id });
+
     } catch (error) {
         console.error('Login Error:', error);
         res.status(500).json({ success: false, message: 'Server error. Please try again.' });
