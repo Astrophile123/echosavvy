@@ -309,7 +309,7 @@ const Cart = () => {
                 </button>
               </div>
               
-              <p className={styles.cartPrice} tabIndex="-1">${item.price}</p>
+              <p className={styles.cartPrice} tabIndex="-1">₹{item.price}</p>
               
               <button 
                 className={styles.removeButton} 
@@ -326,12 +326,12 @@ const Cart = () => {
           
           <div className={styles.cartTotal}>
             <h3 
-              onMouseEnter={() => handleMouseEnter(`Total amount in cart is ${calculateTotal} dollars.`)} 
+              onMouseEnter={() => handleMouseEnter(`Total amount in cart is ${calculateTotal} rupees.`)} 
               onMouseLeave={handleMouseLeave}
               tabIndex="0"
-              onFocus={() => speakText(`Total amount: ${calculateTotal} dollars`, voices)}
+              onFocus={() => speakText(`Total amount: ${calculateTotal} rupees`, voices)}
             >
-              Total: ${calculateTotal}
+              Total: ₹{calculateTotal}
             </h3>
             <button 
               ref={checkoutButtonRef}

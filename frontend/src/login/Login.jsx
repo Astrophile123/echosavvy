@@ -183,7 +183,7 @@ return (
     <h1 className={styles.pageHeading} onMouseEnter={() => handleMouseHover("Welcome to EchoSavvy login page")}>Echosavvy</h1>
     
     <div className={styles.formContainer}>
-      <h2 onMouseEnter={() => handleMouseHover("Login")}>Login using Fingerprint</h2>
+      <h2 onMouseEnter={() => handleMouseHover("Login")}>Login </h2>
       
       <input
         type="text"
