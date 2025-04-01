@@ -8,29 +8,36 @@ import { RiShoppingBag4Line } from "react-icons/ri";
 const Home = () => {
   const elementsRef = useRef([]);
 
-  // Speech synthesis function with slower speed for Indian users
   const speakText = (text) => {
-    if (!text || !window.speechSynthesis) return;
+    if (!window.speechSynthesis) return;
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-IN';
-    utterance.rate = 0.85;
-    utterance.pitch = 1.0;
+    utterance.lang = 'en-GB';
+    utterance.rate = 1;
+    utterance.pitch = 1.2;
 
     const voices = window.speechSynthesis.getVoices();
-    const indianVoice = voices.find(voice =>
-      voice.name.includes('Indian') || voice.lang === 'en-IN'
+
+    
+    let selectedVoice = voices.find(voice => 
+        voice.lang === 'en-GB' && voice.name.toLowerCase().includes("female")
     );
 
-    if (indianVoice) {
-      utterance.voice = indianVoice;
-    } else if (voices.length > 0) {
-      utterance.voice = voices[0];
+    if (!selectedVoice) {
+        selectedVoice = voices.find(voice => voice.lang === 'en-GB');
+    }
+
+    if (!selectedVoice && voices.length > 0) {
+        selectedVoice = voices[0];
+    }
+
+    if (selectedVoice) {
+        utterance.voice = selectedVoice;
     }
 
     window.speechSynthesis.speak(utterance);
-  };
+};
 
   const handleFocus = (index) => {
     const element = elementsRef.current[index];
@@ -105,7 +112,7 @@ const Home = () => {
           className={styles.welcome}
           tabIndex="0"
           data-focusable="true"
-          aria-label="Welcome to EchoSavvy! We are an e-commerce platform designed to empower and assist visually impaired users. Our platform prioritizes accessibility, usability, and inclusivity to ensure a seamless shopping experience for everyone."
+          aria-label="Welcome to EchoSavvy! We are an e-commerce platform designed to empower and assist visually impaired users. Our platform prioritizes accessibility, usability, and inclusivity to ensure a seamless shopping experience for everyone. Move to the top left for login button"
         >
           Welcome to EchoSavvy! We are an e-commerce platform designed to empower and assist visually impaired users. Our platform prioritizes accessibility, usability, and inclusivity to ensure a seamless shopping experience for everyone.
         </p>
@@ -116,7 +123,7 @@ const Home = () => {
           alt="EchoSavvy logo"
           tabIndex="0"
           data-focusable="true"
-          aria-label="EchoSavvy homepage illustration."
+          aria-label="EchoSavvy homepage illustration. Move to the top right for login button"
         />
       </div>
 
@@ -125,7 +132,7 @@ const Home = () => {
           className={styles.copy} 
           tabIndex="0" 
           data-focusable="true" 
-          aria-label="Copyright 2025 EchoSavvy. All rights reserved."
+          aria-label="Copyright 2025 EchoSavvy. All rights reserved.Move to the top right for login and browse products"
         >
           &copy; 2025 EchoSavvy. All rights reserved.
         </p>

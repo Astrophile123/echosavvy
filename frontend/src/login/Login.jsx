@@ -49,12 +49,18 @@ const Login = () => {
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = 'en-US';
+    recognition.lang = 'en-IN';
 
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript.trim();
       console.log(`Recognized speech: ${transcript}`);
 
+      if (transcript.includes("please say your ") ||
+         transcript.includes("no input detected")||
+         transcript.includes("nerve import detected")||
+         transcript.includes("please try again")) return
+
+         
       if (!currentField) {
         console.error("No active field selected.");
         return;
@@ -211,7 +217,7 @@ return (
         onFocus={() => handleMouseHover('Go to Signup Page')}
         onMouseEnter={() => handleMouseHover("Click here to sign up")}
       >
-        <p className={styles.link}>Don't Have An Account? Signup now!</p>
+        <p className={styles.link}>Don&apost Have An Account? Signup now!</p>
       </Link>
       <Link
         to="/"

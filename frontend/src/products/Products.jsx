@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TiShoppingCart } from "react-icons/ti";
 import { HiMicrophone } from "react-icons/hi2";
@@ -137,14 +137,37 @@ const Products = () => {
   };
 
   const speakText = (text) => {
-    if (!synthRef.current) return;
-    synthRef.current.cancel();
+    if (!window.speechSynthesis) return;
+
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-IN";
+    utterance.lang = 'en-GB'; // British English
     utterance.rate = 1;
     utterance.pitch = 1.2;
-    synthRef.current.speak(utterance);
-  };
+
+    const voices = window.speechSynthesis.getVoices();
+
+    // Select a UK English female voice if available
+    let selectedVoice = voices.find(voice => 
+        voice.lang === 'en-GB' && voice.name.toLowerCase().includes("female")
+    );
+
+    // Fallback: Any UK English voice
+    if (!selectedVoice) {
+        selectedVoice = voices.find(voice => voice.lang === 'en-GB');
+    }
+
+    // Fallback: Default system voice
+    if (!selectedVoice && voices.length > 0) {
+        selectedVoice = voices[0];
+    }
+
+    if (selectedVoice) {
+        utterance.voice = selectedVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+};
 
   const handleCartClick = () => {
     if (isLoggedIn) {
@@ -299,7 +322,7 @@ const Products = () => {
                 />
                 <h3>{product.name}</h3>
                 <p className={styles.category}>Category: {product.category}</p>
-                <p className={styles.price}>₹{product.price}</p>
+                <p className={styles.price}>{product.price}</p>
                 <button
                   className={styles.addToCart}
                   onClick={() => handleAddToCart(product)}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useCart } from "./CartContext";
 import { useNavigate } from "react-router-dom";
 import styles from "./Cart.module.css";
@@ -8,7 +8,6 @@ import { speakText, stopSpeech } from "./speechUtils";
 const Cart = () => {
   const { 
     cartItems, 
-    fetchCartItems, 
     removeItem, 
     updateQuantity,
     setCartItems

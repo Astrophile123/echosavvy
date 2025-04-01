@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './Checkout.module.css';
 
 const Checkout = () => {
@@ -35,8 +35,36 @@ const Checkout = () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel(); // Stop any ongoing speech before announcing
       const speech = new SpeechSynthesisUtterance(message);
-      speech.rate = 0.9;
-      window.speechSynthesis.speak(speech);
+
+      // Wait for voices to load
+      const voicesLoaded = () => {
+        const voices = window.speechSynthesis.getVoices();
+
+        // Try to find Google UK English Female voice
+        const googleUKVoice = voices.find((voice) => voice.name === 'Google UK English Female');
+        
+        // If the desired voice is available, use it
+        if (googleUKVoice) {
+          speech.voice = googleUKVoice;
+        } else {
+          // Fallback to the first available voice if Google UK English Female is not found
+          speech.voice = voices[0];
+        }
+
+        speech.lang = 'en-GB'; // Set language to UK English
+        speech.rate = 0.9;      // Adjust speech rate for clarity
+        speech.pitch = 1.0;     // Normal pitch
+
+        // Speak the message
+        window.speechSynthesis.speak(speech);
+      };
+
+      // If voices are not loaded, wait for the 'onvoiceschanged' event
+      if (window.speechSynthesis.getVoices().length === 0) {
+        window.speechSynthesis.onvoiceschanged = voicesLoaded;
+      } else {
+        voicesLoaded();
+      }
     }
 
     // Update the live region for screen readers
@@ -79,6 +107,14 @@ const Checkout = () => {
     }, 3000);
   };
 
+  const handleMouseEnter = (method) => {
+    announce(`${method.name}: ${method.description}`);
+  };
+
+  const handleMouseHoverConfirm = () => {
+    announce('Confirming payment method. Click to confirm the selected method.');
+  };
+
   return (
     <div className={styles.checkoutContainer}>
       {/* Hidden live region for screen reader announcements */}
@@ -99,6 +135,7 @@ const Checkout = () => {
                 tabIndex="0"
                 aria-label={`${method.name}. ${method.description}`}
                 role="button"
+                onMouseEnter={() => handleMouseEnter(method)} // Trigger announcement on hover
               >
                 <span className={styles.paymentIcon} aria-hidden="true">{method.icon}</span>
                 <div className={styles.paymentDetails}>
@@ -113,6 +150,7 @@ const Checkout = () => {
             className={styles.confirmButton}
             onClick={handleConfirm}
             aria-label="Confirm payment method"
+            onMouseEnter={handleMouseHoverConfirm} // Trigger confirmation speech on hover
           >
             Confirm Payment Method
           </button>
