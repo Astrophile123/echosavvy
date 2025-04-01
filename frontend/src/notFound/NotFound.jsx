@@ -1,4 +1,4 @@
-// src/notFound/NotFound.jsx
+
 import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import styles from './NotFound.module.css';
@@ -9,7 +9,7 @@ const NotFound = () => {
     utterance.lang = 'en-US';
     utterance.rate = 1;
     utterance.pitch = 1.1;
-    window.speechSynthesis.cancel(); // Cancel any ongoing speech
+    window.speechSynthesis.cancel(); 
     window.speechSynthesis.speak(utterance);
   };
 

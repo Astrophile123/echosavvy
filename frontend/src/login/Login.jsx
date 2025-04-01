@@ -122,7 +122,7 @@ const Login = () => {
         setErrorMessage('');
         speakText("Fetching authentication challenge. Please wait.");
 
-        // Step 1: Request authentication challenge from backend
+        
         const challengeResponse = await axios.post('http://localhost:8082/api/get-challenge', {
             username: userData.username
         });
@@ -134,7 +134,6 @@ const Login = () => {
 
         speakText("Place your finger on the scanner to log in.");
 
-        // Step 2: Perform fingerprint authentication using WebAuthn
         const credential = await navigator.credentials.get({
             publicKey: {
                 challenge: base64urlToUint8Array(challenge),
@@ -146,7 +145,7 @@ const Login = () => {
 
         if (!credential) throw new Error("Fingerprint authentication failed.");
 
-        // Step 3: Send the authentication data to the backend for verification
+ 
         const response = await axios.post('http://localhost:8082/api/login', {
             username: userData.username,
             credential_id: uint8ArrayToBase64(credential.rawId),
@@ -156,14 +155,14 @@ const Login = () => {
         });
 
         if (response.data.success && response.data.token) {
-            // Step 4: Store authentication token and user details in localStorage
+      
             localStorage.setItem("token", response.data.token);
             localStorage.setItem("user_id", response.data.user_id || "");
             localStorage.setItem("user", userData.username);
 
             speakText(`Welcome ${userData.username}. Redirecting to products page.`);
             
-            // Step 5: Redirect to the products page
+           
             setTimeout(() => {
                 navigate("/products");
             }, 2500);
@@ -184,7 +183,7 @@ return (
     <h1 className={styles.pageHeading} onMouseEnter={() => handleMouseHover("Welcome to EchoSavvy login page")}>Echosavvy</h1>
     
     <div className={styles.formContainer}>
-      <h2 onMouseEnter={() => handleMouseHover("Login")}>Login</h2>
+      <h2 onMouseEnter={() => handleMouseHover("Login")}>Login using Fingerprint</h2>
       
       <input
         type="text"
@@ -202,9 +201,9 @@ return (
 
       <button
   className={styles.submitButton}
-  onClick={authenticateWithFingerprint} // Call fingerprint login function
+  onClick={authenticateWithFingerprint} 
   onFocus={() => handleMouseHover('Press this button to log in')}
-  onMouseEnter={() => handleMouseHover("Click to login")}
+  onMouseEnter={() => handleMouseHover("Place your finger on the scanner to login")}
   disabled={loading || !userData.username}
 >
   {loading ? 'Logging in...' : 'Login'}
@@ -217,7 +216,7 @@ return (
         onFocus={() => handleMouseHover('Go to Signup Page')}
         onMouseEnter={() => handleMouseHover("Click here to sign up")}
       >
-        <p className={styles.link}>Don&apost Have An Account? Signup now!</p>
+        <p className={styles.link}>Don't Have An Account? Signup now!</p>
       </Link>
       <Link
         to="/"

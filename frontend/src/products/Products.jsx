@@ -38,7 +38,7 @@ const Products = () => {
   const recognitionRef = useRef(null);
   const navigate = useNavigate();
 
-  // Refs for keyboard navigation
+
   const searchInputRef = useRef(null);
   const microphoneRef = useRef(null);
   const cartButtonRef = useRef(null);
@@ -46,14 +46,14 @@ const Products = () => {
   const homeButtonRef = useRef(null);
   const productRefs = useRef([]);
 
-  // Check login status
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("user_id");
     setIsLoggedIn(!!token && !!userId);
   }, []);
 
-  // Initialize speech recognition
+  
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -69,7 +69,6 @@ const Products = () => {
     };
   }, []);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey && e.key === "f") {
@@ -93,7 +92,7 @@ const Products = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isLoggedIn]);
 
-  // Filter products
+ 
   useEffect(() => {
     const results = products.filter(product =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -141,23 +140,22 @@ const Products = () => {
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-GB'; // British English
-    utterance.rate = 1;
+    utterance.lang = 'en-GB'; 
+    utterance.rate = .85;
     utterance.pitch = 1.2;
 
     const voices = window.speechSynthesis.getVoices();
 
-    // Select a UK English female voice if available
+
     let selectedVoice = voices.find(voice => 
         voice.lang === 'en-GB' && voice.name.toLowerCase().includes("female")
     );
 
-    // Fallback: Any UK English voice
+ 
     if (!selectedVoice) {
         selectedVoice = voices.find(voice => voice.lang === 'en-GB');
     }
 
-    // Fallback: Default system voice
     if (!selectedVoice && voices.length > 0) {
         selectedVoice = voices[0];
     }
@@ -234,8 +232,8 @@ const Products = () => {
             value={searchTerm}
             onChange={handleSearch}
             aria-label="Search products by name"
-            onMouseEnter={() => speakText("Search bar. Type or use voice search")}
-            onFocus={() => speakText("Search products")}
+            onMouseEnter={() => speakText("Search bar. Type or move to the right for voice search")}
+            onFocus={() => speakText("Search products by moving to the right")}
             tabIndex="0"
           />
 
@@ -327,7 +325,7 @@ const Products = () => {
                   className={styles.addToCart}
                   onClick={() => handleAddToCart(product)}
                   onMouseEnter={() => speakText(`Add ${product.name} to cart`)}
-                  tabIndex="-1" // Prevent button from being focusable separately
+                  tabIndex="-1" 
                 >
                   Add to Cart
                 </button>

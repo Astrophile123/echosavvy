@@ -14,11 +14,11 @@ const fido2 = new Fido2Lib({
     cryptoParams: [-7, -257],
 });
 
-// Helper functions for Base64URL encoding
+
 const base64urlToBase64 = (str) => str.replace(/-/g, "+").replace(/_/g, "/");
 const base64ToBase64url = (str) => str.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
-// ✅ **Generate a challenge for WebAuthn**
+
 router.post('/get-challenge', async (req, res) => {
     try {
         const { username } = req.body;
@@ -26,11 +26,11 @@ router.post('/get-challenge', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Username is required' });
         }
 
-        // Generate a cryptographically secure challenge
+       
         const challengeBuffer = crypto.randomBytes(32);
         const challenge = base64ToBase64url(challengeBuffer.toString('base64'));
 
-        // Retrieve user's credential ID
+       
         const [user] = await db.promise().query(
             'SELECT credential_id FROM users WHERE username = ?',
             [username]
@@ -40,13 +40,12 @@ router.post('/get-challenge', async (req, res) => {
             return res.status(400).json({ success: false, message: 'User not found or no registered credentials' });
         }
 
-        // Save challenge in the database
         await db.promise().query(
             'UPDATE users SET challenge = ? WHERE username = ?',
             [challenge, username]
         );
 
-        // Return challenge and credential ID
+        
         res.status(200).json({ 
             success: true, 
             challenge, 
@@ -59,7 +58,7 @@ router.post('/get-challenge', async (req, res) => {
     }
 });
 
-// ✅ **Signup Route - Registers User with Fingerprint**
+
 router.post('/signup', async (req, res) => {
     try {
         const { username, phone, credential_id, public_key } = req.body;
@@ -67,7 +66,7 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ success: false, message: 'All fields are required' });
         }
 
-        // Check if the user already exists
+       
         const [existingUser] = await db.promise().query(
             'SELECT * FROM users WHERE username = ?',
             [username]
@@ -76,7 +75,7 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Username already taken' });
         }
 
-        // Convert Base64URL to Base64 before storing
+       
         const fixedPublicKey = base64urlToBase64(public_key);
 
         await db.promise().query(
@@ -91,7 +90,7 @@ router.post('/signup', async (req, res) => {
     }
 });
 
-// ✅ **Login Route - Authenticate User with WebAuthn**
+
 const jwt = require('jsonwebtoken');
 
 router.post('/login', async (req, res) => {
@@ -110,14 +109,14 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'User not found or credential mismatch' });
         }
 
-        // Generate JWT token
+       
         const token = jwt.sign(
             { user_id: user[0].id, username: user[0].username },
              JWT_SECRET,
               { expiresIn: "3d" }
             );
 
-        // Store token in the database
+        
         await db.promise().query(
             'UPDATE users SET token = ? WHERE username = ?',
             [token, username]
@@ -131,7 +130,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// ✅ **Register Challenge Route (Fix for 404 Error)**
+
 router.post('/register-challenge', async (req, res) => {
     try {
         const challengeBuffer = crypto.randomBytes(32);

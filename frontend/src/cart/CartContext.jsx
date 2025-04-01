@@ -8,7 +8,6 @@ export const CartProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Get current user info
   const getAuthInfo = () => {
     return {
       user_id: localStorage.getItem("user_id"),
@@ -16,15 +15,13 @@ export const CartProvider = ({ children }) => {
     };
   };
 
-  // Fetch cart items from API
   const fetchCartItems = useCallback(async () => {
-    const { user_id, token } = getAuthInfo();
+    const { token } = getAuthInfo();
     setLoading(true);
     setError(null);
 
     try {
       if (!token) {
-        // Handle guest cart from localStorage
         const guestCart = JSON.parse(localStorage.getItem("guestCart") || "[]");
         setCartItems(guestCart);
         return;
@@ -49,60 +46,56 @@ export const CartProvider = ({ children }) => {
     fetchCartItems();
   }, [fetchCartItems]);
 
-  // Add item to cart
   const addToCart = async (item) => {
-    const { user_id, token } = getAuthInfo();
+    const { token } = getAuthInfo();
     setLoading(true);
     setError(null);
 
     try {
-      if (token) {
-        // Authenticated user - add to server
-        const response = await axios.post(
-          "http://localhost:8082/api/cart/add",
-          {
-            product_id: item.product_id,
-            product_name: item.product_name,
-            price: item.price,
-            quantity: item.quantity || 1,
-            image_url: item.image_url
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        if (token) {
+          
+            const response = await axios.post(
+                "http://localhost:8082/api/cart/add",
+                {
+                    product_id: item.product_id,
+                    quantity: item.quantity || 1
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-        // Refresh cart after addition
-        await fetchCartItems();
-        return response.data;
-      } else {
-        // Guest user - add to local storage
-        const guestCart = [...cartItems];
-        const existingItem = guestCart.find(i => i.product_id === item.product_id);
-
-        if (existingItem) {
-          existingItem.quantity += item.quantity || 1;
+     
+            await fetchCartItems();
+            return response.data;
         } else {
-          guestCart.push({
-            ...item,
-            quantity: item.quantity || 1
-          });
+            
+            const guestCart = [...cartItems];
+            const existingIndex = guestCart.findIndex(i => i.product_id === item.product_id);
+
+            if (existingIndex >= 0) {
+              
+                guestCart[existingIndex].quantity += item.quantity || 1;
+            } else {
+               
+                guestCart.push({
+                    ...item,
+                    quantity: item.quantity || 1
+                });
+            }
+
+            localStorage.setItem("guestCart", JSON.stringify(guestCart));
+            setCartItems(guestCart);
+            return guestCart;
         }
-
-        localStorage.setItem("guestCart", JSON.stringify(guestCart));
-        setCartItems(guestCart);
-        return guestCart;
-      }
     } catch (error) {
-      console.error("Error adding to cart:", error);
-      setError(error.response?.data?.message || "Failed to add item to cart");
-      throw error;
+        console.error("Error:", error);
+        setError("Failed to update cart");
+        throw error;
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
-
-  // Remove item from cart
+};
   const removeItem = async (product_id) => {
-    const { user_id, token } = getAuthInfo();
+    const { token } = getAuthInfo();
     setLoading(true);
     setError(null);
 
@@ -112,77 +105,84 @@ export const CartProvider = ({ children }) => {
           data: { product_id },
           headers: { Authorization: `Bearer ${token}` }
         });
-        await fetchCartItems();
-      } else {
-        const guestCart = cartItems.filter(item => item.product_id !== product_id);
-        localStorage.setItem("guestCart", JSON.stringify(guestCart));
-        setCartItems(guestCart);
+      }
+
+      
+      setCartItems(prevItems => {
+        const updatedItems = prevItems.filter(item => item.product_id !== product_id);
+        
+      
+        if (!token) {
+          localStorage.setItem("guestCart", JSON.stringify(updatedItems));
+        }
+        
+        return updatedItems;
+      });
+
+      if (token) {
+        await fetchCartItems(); 
       }
     } catch (error) {
       console.error("Error removing item:", error);
       setError(error.response?.data?.message || "Failed to remove item");
-      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  // Update item quantity
-  const updateQuantity = async (product_id, newQuantity) => {
-    if (newQuantity < 1) return;
-    const { user_id, token } = getAuthInfo();
+  const updateQuantity = async (product_id, change) => {
+    const { token } = getAuthInfo();
     setLoading(true);
     setError(null);
 
     try {
-      if (token) {
-        // Find current item to determine new quantity
-        const currentItem = cartItems.find(item => item.product_id === product_id);
-        if (!currentItem) return;
+      const currentItem = cartItems.find(item => item.product_id === product_id);
+      if (!currentItem) return;
 
-        if (newQuantity < 1) {
-          await removeItem(product_id);
-          return;
+      const newQuantity = currentItem.quantity + change;
+      if (newQuantity < 1) return;
+
+     
+      setCartItems(prevItems => {
+        const updatedItems = prevItems.map(item =>
+          item.product_id === product_id
+            ? { ...item, quantity: newQuantity }
+            : item
+        );
+        
+       
+        if (!token) {
+          localStorage.setItem("guestCart", JSON.stringify(updatedItems));
         }
+        
+        return updatedItems;
+      });
 
+      if (token) {
         await axios.put(
           "http://localhost:8082/api/cart/update",
           { product_id, quantity: newQuantity },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        setCartItems(prevItems =>
-          prevItems.map(item =>
-            item.product_id === product_id
-              ? { ...item, quantity: newQuantity }
-              : item
-          )
-        );
-      } else {
-        const guestCart = [...cartItems];
-        const item = guestCart.find(item => item.product_id === product_id);
-
-        if (item) {
-          item.quantity = newQuantity;
-          if (item.quantity < 1) {
-            // Remove if quantity drops to 0
-            await removeItem(product_id);
-          } else {
-            localStorage.setItem("guestCart", JSON.stringify(guestCart));
-            setCartItems(guestCart);
+          { 
+            headers: { Authorization: `Bearer ${token}` },
+            validateStatus: (status) => status < 500
           }
-        }
+        );
+        
+        await fetchCartItems(); 
       }
     } catch (error) {
       console.error("Error updating quantity:", error);
       setError(error.response?.data?.message || "Failed to update quantity");
-      throw error;
+      
+     
+      if (token) {
+        await fetchCartItems();
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Clear entire cart
   const clearCart = async () => {
     const { token } = getAuthInfo();
     setLoading(true);
@@ -190,8 +190,6 @@ export const CartProvider = ({ children }) => {
 
     try {
       if (token) {
-        // For authenticated users - clear on server
-        // Note: You might need to implement a clear endpoint on your backend
         await Promise.all(
           cartItems.map(item => 
             axios.delete("http://localhost:8082/api/cart/remove", {
@@ -200,25 +198,23 @@ export const CartProvider = ({ children }) => {
             })
           )
         );
-        await fetchCartItems();
       } else {
-        // For guest users - clear local storage
         localStorage.removeItem("guestCart");
-        setCartItems([]);
       }
+      
+      setCartItems([]);
     } catch (error) {
       console.error("Error clearing cart:", error);
       setError(error.response?.data?.message || "Failed to clear cart");
-      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate total items in cart
+  
   const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-  // Calculate total price
+ 
   const totalPrice = cartItems.reduce(
     (sum, item) => sum + (parseFloat(item.price) || 0) * (item.quantity || 1),
     0
@@ -237,7 +233,7 @@ export const CartProvider = ({ children }) => {
         clearCart,
         totalItems,
         totalPrice,
-        setCartItems // Only expose if absolutely necessary
+        setCartItems
       }}
     >
       {children}

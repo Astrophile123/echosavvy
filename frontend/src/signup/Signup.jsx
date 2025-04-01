@@ -120,7 +120,7 @@ const Signup = () => {
             ? base64urlEncode(publicKeyCredential.response.getPublicKey())
             : base64urlEncode(publicKeyCredential.response.attestationObject);
       
-          return { credential_id, public_key: publicKey }; // ✅ Fixed Typo
+          return { credential_id, public_key: publicKey };
       
         } catch (error) {
           console.error(error);
@@ -133,7 +133,7 @@ const Signup = () => {
       const registerUser = async () => {
         console.log("📤 Initiating fingerprint-based signup...");
     
-        // Step 1: Register Fingerprint
+       
         const fingerprintData = await registerFingerprint();
         if (!fingerprintData) {
             const errorMsg = "Fingerprint registration failed. Please try again.";
@@ -143,7 +143,7 @@ const Signup = () => {
             return;
         }
     
-        // Step 2: Validate User Input
+       
         const trimmedUsername = userData.username.trim();
         const trimmedPhone = userData.phone.replace(/\s+/g, '');
     
@@ -155,7 +155,6 @@ const Signup = () => {
             return;
         }
     
-        // Step 3: Send Signup Request
         try {
             const response = await axios.post('http://localhost:8082/api/signup', {
                 username: trimmedUsername,
@@ -191,15 +190,15 @@ const Signup = () => {
 
 
       <div className={styles.formContainer}>
-        <h2>Signup</h2>
+        <h2>Signup </h2>
 
         <input
           type="text"
           required
           placeholder="Enter Your Username"
-          value={userData.username}  // FIXED: Changed from name to username
+          value={userData.username}  
           onFocus={() => handleFieldFocus('username', 'Enter your user name and speak now.')}
-          onChange={(e) => setUserData({ ...userData, username: e.target.value })}  // FIXED: Changed 'name' to 'username'
+          onChange={(e) => setUserData({ ...userData, username: e.target.value })}  
           onMouseEnter={() => handleMouseHover('Enter your username.')}
           className={styles.userFullNameInput}
         />

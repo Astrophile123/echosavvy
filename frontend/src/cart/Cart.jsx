@@ -10,7 +10,8 @@ const Cart = () => {
     cartItems, 
     removeItem, 
     updateQuantity,
-    setCartItems
+    setCartItems,
+    fetchCartItems 
   } = useCart();
   
   const navigate = useNavigate();
@@ -18,13 +19,11 @@ const Cart = () => {
   const [voices, setVoices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Refs for keyboard navigation
   const continueShoppingRef = useRef(null);
   const checkoutButtonRef = useRef(null);
   const itemRefs = useRef([]);
 
-  // Fetch cart items on component mount
+  
   useEffect(() => {
     const getCartItems = async () => {
       setLoading(true);
@@ -55,7 +54,6 @@ const Cart = () => {
     getCartItems();
   }, [navigate, setCartItems]);
 
-  // Voice synthesis setup
   useEffect(() => {
     const handleVoicesChanged = () => {
       const availableVoices = window.speechSynthesis.getVoices();
@@ -71,7 +69,7 @@ const Cart = () => {
     };
   }, []);
 
-  // Announce cart contents when items change
+ 
   useEffect(() => {
     stopSpeech();
     if (cartItems.length === 0) {
@@ -81,7 +79,7 @@ const Cart = () => {
     }
   }, [cartItems, voices]);
 
-  // Clean up speech when window loses focus
+ 
   useEffect(() => {
     const handleWindowBlur = () => {
       stopSpeech();
@@ -92,14 +90,14 @@ const Cart = () => {
     return () => window.removeEventListener("blur", handleWindowBlur);
   }, []);
 
-  // Calculate total price
+ 
   const calculateTotal = useMemo(() => {
     return cartItems
       .reduce((total, item) => total + (parseFloat(item.price) || 0) * (item.quantity || 1), 0)
       .toFixed(2);
   }, [cartItems]);
 
-  // Handle mouse hover events for accessibility
+ 
   const handleMouseEnter = (text) => {
     if (!window.speechSynthesis.speaking) {
       stopSpeech();
@@ -113,11 +111,9 @@ const Cart = () => {
     stopSpeech();
   };
 
-  // Handle keyboard navigation
   const handleKeyDown = (e, item, index) => {
     switch (e.key) {
       case "Enter":
-        // Focus first interactive element in the item
         if (itemRefs.current[index]?.querySelector("button")) {
           itemRefs.current[index].querySelector("button").focus();
         }
@@ -141,7 +137,6 @@ const Cart = () => {
     }
   };
 
-  // Handle quantity updates
   const handleUpdateQuantity = async (product_id, change) => {
     try {
       const token = localStorage.getItem("token");
@@ -151,25 +146,47 @@ const Cart = () => {
       }
 
       const currentItem = cartItems.find(item => item.product_id === product_id);
-      if (!currentItem) return;
+      if (!currentItem) {
+        throw new Error("Item not found in cart");
+      }
 
       const newQuantity = currentItem.quantity + change;
       if (newQuantity < 1) return;
 
-      await axios.put(
-        "http://localhost:8082/api/cart/update",
-        { product_id, quantity: newQuantity },
-        { headers: { Authorization: `Bearer ${token}` } }
+     
+      setCartItems(prev => 
+        prev.map(item => 
+          item.product_id === product_id 
+            ? {...item, quantity: newQuantity} 
+            : item
+        )
       );
 
-      updateQuantity(product_id, change);
+      const response = await axios.put(
+        "http://localhost:8082/api/cart/update",
+        { product_id, quantity: newQuantity },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          validateStatus: (status) => status < 500
+        }
+      );
+
+      if (response.status === 404) {
+        await fetchCartItems();
+        setError("Item not found - cart refreshed");
+      } else if (!response.data?.success) {
+        throw new Error(response.data?.message || "Update failed");
+      }
     } catch (err) {
-      console.error("Error updating quantity:", err);
-      setError("Failed to update quantity");
+      console.error("Update error:", err);
+      setError(err.message || "Failed to update quantity");
+      await fetchCartItems();
     }
   };
 
-  // Handle item removal
   const handleRemoveItem = async (product_id) => {
     try {
       const token = localStorage.getItem("token");
@@ -244,7 +261,7 @@ const Cart = () => {
         <div className={styles.cartItems}>
           {cartItems.map((item, index) => (
             <div 
-              key={item.product_id} 
+              key={`${item.product_id}-${index}`}
               className={styles.cartItem}
               ref={el => itemRefs.current[index] = el}
               tabIndex="0"
