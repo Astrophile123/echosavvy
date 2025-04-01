@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const db = require('../db'); 
 
-
 router.post("/add", (req, res) => {
     const { user_id, product_id, product_name, price, image_url } = req.body;
 
@@ -12,15 +11,16 @@ router.post("/add", (req, res) => {
         return res.status(400).json({ error: "All fields are required" });
     }
 
+    // Here we calculate total_amount correctly.
+    const total_amount = price * 1;  // Starting with quantity of 1 initially
+
     const query = `
         INSERT INTO cart (user_id, product_id, product_name, price, image_url, quantity, total_amount)
         VALUES (?, ?, ?, ?, ?, 1, ?)
         ON DUPLICATE KEY UPDATE 
         quantity = quantity + 1, 
-        total_amount = price * quantity;
+        total_amount = price * (quantity + 1);
     `;
-
-    const total_amount = price * 1; 
 
     db.query(
         query,

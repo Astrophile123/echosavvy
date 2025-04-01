@@ -153,7 +153,7 @@ const Cart = () => {
       const newQuantity = currentItem.quantity + change;
       if (newQuantity < 1) return;
 
-     
+      // Update the item in the cart state
       setCartItems(prev => 
         prev.map(item => 
           item.product_id === product_id 
@@ -169,21 +169,16 @@ const Cart = () => {
           headers: { 
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
-          },
-          validateStatus: (status) => status < 500
+          }
         }
-      );
+        );
 
-      if (response.status === 404) {
-        await fetchCartItems();
-        setError("Item not found - cart refreshed");
-      } else if (!response.data?.success) {
+      if (!response.data?.success) {
         throw new Error(response.data?.message || "Update failed");
       }
     } catch (err) {
       console.error("Update error:", err);
       setError(err.message || "Failed to update quantity");
-      await fetchCartItems();
     }
   };
 
@@ -309,7 +304,7 @@ const Cart = () => {
                 </button>
               </div>
               
-              <p className={styles.cartPrice} tabIndex="-1">₹{item.price}</p>
+              <p className={styles.cartPrice} tabIndex="-1">₹{item.price*item.quantity.toFixed(2)}</p>
               
               <button 
                 className={styles.removeButton} 

@@ -127,45 +127,6 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
-app.post('/api/cart/add', async (req, res) => {
-    try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) return res.status(401).json({ message: "Unauthorized" });
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const user_id =  decoded.user_id; 
-        if (!user_id) return res.status(403).json({ error: "Invalid user" });
-
-        const { product_id, product_name, price, quantity = 1, image_url } = req.body;
-
-        
-        const [existing] = await db.promise().query(
-            "SELECT * FROM cart WHERE user_id = ? AND product_id = ?",
-            [user_id, product_id]
-        );
-
-        if (existing.length > 0) {
-           
-            const newQuantity = existing[0].quantity + quantity;
-            await db.promise().query(
-                "UPDATE cart SET quantity = ?, total_amount = price * ? WHERE user_id = ? AND product_id = ?",
-                [newQuantity, newQuantity, user_id, product_id]
-            );
-            return res.status(200).json({ message: "Cart updated successfully" });
-        } else {
-           
-            const total_amount = price * quantity;
-            await db.promise().query(
-                "INSERT INTO cart (user_id, product_id, product_name, price, quantity, image_url, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [user_id, product_id, product_name, price, quantity, image_url, total_amount]
-            );
-            return res.status(200).json({ message: "Added to cart successfully" });
-        }
-    } catch (error) {
-        console.error("Database error:", error);
-        res.status(500).json({ message: "Database error", error: error.message });
-    }
-});
 
 app.get('/api/cart', async (req, res) => {
     try{
@@ -189,74 +150,6 @@ app.get('/api/cart', async (req, res) => {
 
         console.error("Error fetching cart items:", error);
         res.status(500).json({ message: "Database error", error: error.message });
-    }
-});
-
-app.delete('/api/cart/remove', async (req, res) => {
-    const token = req.headers.authorization?.split(" ")[1];
-
-    if (!token) {
-        return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const userId = decoded.user_id;
-        const { product_id } = req.body;
-
-        await db.promise().query(
-            "DELETE FROM cart WHERE user_id = ? AND product_id = ?",
-            [userId, product_id]
-        );
-
-        res.status(200).json({ message: "Item removed from cart" });
-    } catch (error) {
-        console.error("Error removing item from cart:", error);
-        res.status(500).json({ message: "Database error", error: error.message });
-    }
-});
-app.post('/api/cart/add', async (req, res) => {
-    try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) return res.status(401).json({ message: "Unauthorized" });
-
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const user_id = decoded.id || decoded.user_id;
-        
-        const { product_id, quantity = 1 } = req.body;
-
-       
-        const [existing] = await db.promise().query(
-            "SELECT * FROM cart WHERE user_id = ? AND product_id = ?",
-            [user_id, product_id]
-        );
-
-        if (existing.length > 0) {
-          
-            const newQuantity = existing[0].quantity + quantity;
-            await db.promise().query(
-                "UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?",
-                [newQuantity, user_id, product_id]
-            );
-            return res.json({ 
-                message: "Cart quantity updated",
-                action: "updated" 
-            });
-        }
-
-      
-        await db.promise().query(
-            "INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)",
-            [user_id, product_id, quantity]
-        );
-
-        res.json({ 
-            message: "Item added to cart",
-            action: "added"
-        });
-    } catch (error) {
-        console.error("Error:", error);
-        res.status(500).json({ message: "Server error" });
     }
 });
 
@@ -293,6 +186,70 @@ app.post('/auth/passkey/register', async (req, res) => {
       res.json({ success: true, token, user_id: user.id });
     }
   });
+
+  app.post('/api/cart/add', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user_id =  decoded.user_id; 
+        if (!user_id) return res.status(403).json({ error: "Invalid user" });
+
+        const { product_id, product_name, price, quantity = 1, image_url } = req.body;
+
+        const [existingProduct] = await db.promise().query(
+            "SELECT * FROM cart WHERE user_id = ? AND product_id = ?",
+            [user_id, product_id]
+        );
+
+        if (existingProduct.length > 0) {
+            // Update the quantity if the product already exists in the cart
+            const newQuantity = existingProduct[0].quantity + quantity;
+            await db.promise().query(
+                "UPDATE cart SET quantity = ?, total_amount = price * ? WHERE user_id = ? AND product_id = ?",
+                [newQuantity, newQuantity, user_id, product_id]
+            );
+            return res.status(200).json({ message: "Cart updated successfully" });
+        } else {
+            // Insert new product if not found
+            const total_amount = price * quantity;
+            await db.promise().query(
+                "INSERT INTO cart (user_id, product_id, product_name, price, quantity, image_url, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [user_id, product_id, product_name, price, quantity, image_url, total_amount]
+            );
+            return res.status(200).json({ message: "Added to cart successfully" });
+        }
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ message: "Database error", error: error.message });
+    }
+});
+
+app.delete('/api/cart/remove', async (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded.user_id;
+        const { product_id } = req.body;
+
+        await db.promise().query(
+            "DELETE FROM cart WHERE user_id = ? AND product_id = ?",
+            [userId, product_id]
+        );
+
+        res.status(200).json({ message: "Item removed from cart" });
+    } catch (error) {
+        console.error("Error removing item from cart:", error);
+        res.status(500).json({ message: "Database error", error: error.message });
+    }
+});
+
 
 app.put('/api/cart/update', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];

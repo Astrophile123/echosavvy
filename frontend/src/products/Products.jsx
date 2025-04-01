@@ -182,34 +182,60 @@ const Products = () => {
       navigate("/login");
       return;
     }
-
+  
     const cleanPrice = Number(String(product.price).replace(/[^0-9.-]+/g, ""));
     
     if (isNaN(cleanPrice)) {
       speakText(`Invalid price format for ${product.name}`);
       return;
     }
-
+  
     try {
       speakText(`Adding ${product.name} to cart...`);
-      await axios.post(
-        "http://localhost:8082/api/cart/add",
-        {
-          user_id: localStorage.getItem("user_id"),
-          product_id: product.id,
-          product_name: product.name,
-          price: cleanPrice,
-          quantity: 1,
-          image_url: product.image
-        },
-        { headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } }
-      );
-      speakText(`${product.name} added to cart successfully!`);
+      
+      // Check if product already exists in the cart
+      const response = await axios.get("http://localhost:8082/api/cart", {
+        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+      });
+  
+      const existingItem = response.data.find(item => item.product_id === product.id);
+  
+      if (existingItem) {
+        // If the item is already in the cart, update its quantity
+        await axios.put(
+          "http://localhost:8082/api/cart/update",
+          {
+            user_id: localStorage.getItem("user_id"),
+            product_id: product.id,
+            quantity: existingItem.quantity + 1 // Increase the quantity
+          },
+          { headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } }
+        );
+        speakText(`${product.name} quantity updated in the cart.`);
+      } else {
+        // If the item is not in the cart, add it
+        await axios.post(
+          "http://localhost:8082/api/cart/add",
+          {
+            user_id: localStorage.getItem("user_id"),
+            product_id: product.id,
+            product_name: product.name,
+            price: cleanPrice,
+            quantity: 1,
+            image_url: product.image
+          },
+          { headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } }
+        );
+        speakText(`${product.name} added to cart successfully!`);
+      }
+  
       navigate("/cart");
     } catch (error) {
       speakText("Failed to add to cart. Please try again.");
+      console.error(error);
     }
   };
+  
 
   return (
     <main className={styles.productDisplay}>
