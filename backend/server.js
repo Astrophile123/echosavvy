@@ -204,7 +204,7 @@ app.post('/auth/passkey/register', async (req, res) => {
         );
 
         if (existingProduct.length > 0) {
-            // Update the quantity if the product already exists in the cart
+    
             const newQuantity = existingProduct[0].quantity + quantity;
             await db.promise().query(
                 "UPDATE cart SET quantity = ?, total_amount = price * ? WHERE user_id = ? AND product_id = ?",
@@ -212,7 +212,7 @@ app.post('/auth/passkey/register', async (req, res) => {
             );
             return res.status(200).json({ message: "Cart updated successfully" });
         } else {
-            // Insert new product if not found
+            
             const total_amount = price * quantity;
             await db.promise().query(
                 "INSERT INTO cart (user_id, product_id, product_name, price, quantity, image_url, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)",

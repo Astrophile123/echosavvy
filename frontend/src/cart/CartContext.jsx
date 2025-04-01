@@ -41,7 +41,7 @@ export const CartProvider = ({ children }) => {
     }
   }, []);
 
-  // Initialize cart on mount
+  
   useEffect(() => {
     fetchCartItems();
   }, [fetchCartItems]);

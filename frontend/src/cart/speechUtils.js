@@ -4,7 +4,7 @@ export const speakText = (text) => {
   const utterance = new SpeechSynthesisUtterance(text);
   const availableVoices = window.speechSynthesis.getVoices();
 
-  // Find Google UK Female voice
+  
   const googleUKFemale = availableVoices.find(
     (voice) => voice.name.includes("Google UK English Female")
   );
@@ -12,12 +12,12 @@ export const speakText = (text) => {
   if (googleUKFemale) {
     utterance.voice = googleUKFemale;
   } else if (availableVoices.length > 0) {
-    utterance.voice = availableVoices[0]; // Fallback voice
+    utterance.voice = availableVoices[0]; 
   }
 
-  // Set voice properties
-  utterance.lang = "en-IN";  // British English
-  utterance.rate = 0.9;  // Normal speed
+  
+  utterance.lang = "en-IN";  
+  utterance.rate = 0.9;  
   utterance.pitch = 1.0;  
   utterance.volume = 1.0;  
 

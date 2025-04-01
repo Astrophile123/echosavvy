@@ -75,7 +75,7 @@ const Cart = () => {
     if (cartItems.length === 0) {
       speakText("Your cart is empty.", voices);
     } else {
-      speakText(`You have ${cartItems.length} items in your cart.`, voices);
+      speakText(`You have ${cartItems.length} products in your cart, including: ${cartItems.map(item => `${item.quantity} ${item.product_name}`).join(", ")}.`, voices);
     }
   }, [cartItems, voices]);
 
@@ -153,7 +153,7 @@ const Cart = () => {
       const newQuantity = currentItem.quantity + change;
       if (newQuantity < 1) return;
 
-      // Update the item in the cart state
+      
       setCartItems(prev => 
         prev.map(item => 
           item.product_id === product_id 
@@ -262,11 +262,11 @@ const Cart = () => {
               tabIndex="0"
               onKeyDown={(e) => handleKeyDown(e, item, index)}
               onMouseEnter={() => handleMouseEnter(
-                `Product: ${item.product_name}, Quantity: ${item.quantity}, Price: ${item.price} dollars.`
+                `Product: ${item.product_name}, Quantity: ${item.quantity}, Price: ${item.price*item.quantity} rupees.`
               )} 
               onMouseLeave={handleMouseLeave}
               onFocus={() => speakText(
-                `Product: ${item.product_name}, Quantity: ${item.quantity}, Price: ${item.price} dollars.`,
+                `Product: ${item.product_name}, Quantity: ${item.quantity}, Price: ${item.price*item.quantity} rupees.`,
                 voices
               )}
             >
